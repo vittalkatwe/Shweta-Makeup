@@ -37,8 +37,7 @@ export default function WhoShouldJoin() {
 
         <div className="cta-center reveal">
           <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹1,999</strong>
-            <span className="original">₹4,999</span>
+            🚀 Join Now for <strong>₹499</strong>
           </a>
         </div>
       </div>
