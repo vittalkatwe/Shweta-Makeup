@@ -65,7 +65,6 @@ export default function App() {
     <>
       <AnnouncementBar />
       <HeroSection />
-      <BrandsSection />
       <PerfectForYou />
       <WhoShouldJoin />
       <Curriculum />

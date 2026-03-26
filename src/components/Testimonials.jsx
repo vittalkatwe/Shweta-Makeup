@@ -43,7 +43,7 @@ export default function Testimonials() {
     <section className="section testimonials-section">
       <div className="section-inner">
         <div className="reveal">
-          <h2 className="section-title">What Others Are Saying…</h2>
+          <h2 className="section-title">Student Feedback</h2>
           <div className="section-divider section-divider-white" />
         </div>
 
@@ -82,8 +82,8 @@ export default function Testimonials() {
 
         <div className="cta-center reveal">
           <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹1,999</strong>
-            <span className="original">₹4,999</span>
+            🚀 Join Now for <strong>₹499</strong>
+            <span className="original">₹999</span>
           </a>
         </div>
       </div>

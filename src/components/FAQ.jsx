@@ -1,13 +1,12 @@
 import React, { useState } from 'react'
 
 const faqs = [
-  { q: 'Is This Course Online or Offline?', a: "This is a 100% online course! 📲 Access it anytime, anywhere by downloading the 'Lavisha Arora' app from the Play Store or App Store. Simply log in with your registered mobile number." },
   { q: 'How long is the course and what content does it include?', a: 'The course comprises 16 lessons totaling over 4 hours of content, covering all aspects of makeup from makeup theory to practical techniques.' },
   { q: 'Can beginners enroll in this course?', a: 'YES! This course is suitable for beginners as it starts with the basics and gradually progresses to more advanced & practical techniques.' },
   { q: 'Will I receive a certificate upon completing the course?', a: 'Yes, upon completion of the course, you will receive a certificate acknowledging your new skills and knowledge in makeup.' },
-  { q: 'Is there any support available during the course?', a: 'Yes, you can participate in monthly live Q&A sessions for direct support from Lavisha, and you can also engage with peers and experts through the exclusive course community section in the app.' },
-  { q: "In which languages is Lavisha Arora's Makeup Mastery Course available?", a: "Hinglish — it's just as if we were speaking with you one-on-one. Moreover the use of Hindi is more than the use of English." },
-  { q: "I made the payment but didn't receive any confirmation email?", a: 'Please write to support@lavishaarora.in — our dedicated support team will get back to you in 24 hours.' },
+  { q: 'Is there any support available during the course?', a: 'Yes, you can participate in monthly live Q&A sessions for direct support from Shweta, and you can also engage with peers and experts through the exclusive course community section in the app.' },
+  { q: "In which languages is Shweta Celeb Makeover's Makeup Mastery Course available?", a: "Hinglish — it's just as if we were speaking with you one-on-one. Moreover the use of Hindi is more than the use of English." },
+  { q: "I made the payment but didn't receive any confirmation email?", a: 'WhatsApp us on +91 7039240054 — our dedicated support team will get back to you in 24 hours.' },
 ]
 
 const PlusIcon = ({ open }) => (

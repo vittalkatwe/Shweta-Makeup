@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ── Overlay ─────────────────────────────────────────── */
+.ppf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 6, 4, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: ppf-fade-in 0.35s ease;
+}
+
+@keyframes ppf-fade-in {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+
+/* ── Modal card ──────────────────────────────────────── */
+.ppf-modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: #fdfaf7;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(220,170,120,0.15);
+  animation: ppf-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ppf-slide-up {
+  from { opacity: 0; transform: translateY(32px) scale(0.97) }
+  to   { opacity: 1; transform: translateY(0) scale(1) }
+}
+
+/* ── Decorative blobs ────────────────────────────────── */
+.ppf-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.ppf-blob-1 {
+  width: 260px; height: 260px;
+  top: -80px; right: -60px;
+  background: radial-gradient(circle, rgba(232,152,84,0.18) 0%, transparent 70%);
+}
+.ppf-blob-2 {
+  width: 200px; height: 200px;
+  bottom: -60px; left: -40px;
+  background: radial-gradient(circle, rgba(196,130,90,0.12) 0%, transparent 70%);
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.ppf-header {
+  position: relative;
+  z-index: 1;
+  padding: 32px 32px 0;
+}
+
+.ppf-step-pill {
+  display: inline-block;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b8702a;
+  background: rgba(220,152,80,0.12);
+  border: 1px solid rgba(220,152,80,0.25);
+  padding: 5px 12px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+}
+
+.ppf-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1a0f08;
+  margin: 0 0 6px;
+}
+.ppf-title em {
+  font-style: italic;
+  color: #c8702a;
+}
+
+.ppf-subtitle {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: #8a7060;
+  margin: 0 0 20px;
+}
+
+/* ── Progress bar ────────────────────────────────────── */
+.ppf-progress-track {
+  height: 3px;
+  background: rgba(200,140,80,0.15);
+  position: relative;
+  z-index: 1;
+}
+.ppf-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d4843a, #e8a84e);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Body ────────────────────────────────────────────── */
+.ppf-body {
+  position: relative;
+  z-index: 1;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Fields ──────────────────────────────────────────── */
+.ppf-field { display: flex; flex-direction: column; gap: 7px; }
+
+.ppf-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3d2010;
+  letter-spacing: 0.01em;
+}
+.ppf-required { color: #c8702a; margin-left: 3px; }
+
+.ppf-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ppf-has-prefix .ppf-input { padding-left: 52px; }
+.ppf-tel-prefix {
+  position: absolute;
+  left: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #8a7060;
+  pointer-events: none;
+}
+
+.ppf-input,
+.ppf-select,
+.ppf-textarea {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: #1a0f08;
+  background: #fff;
+  border: 1.5px solid rgba(180,130,80,0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.ppf-input::placeholder,
+.ppf-textarea::placeholder { color: #c4a88a; }
+.ppf-input:focus,
+.ppf-select:focus,
+.ppf-textarea:focus {
+  border-color: #c8702a;
+  box-shadow: 0 0 0 3px rgba(200,112,42,0.1);
+}
+.ppf-input.ppf-error,
+.ppf-select.ppf-error,
+.ppf-textarea.ppf-error {
+  border-color: #e05252;
+  box-shadow: 0 0 0 3px rgba(224,82,82,0.08);
+}
+
+.ppf-textarea { resize: none; min-height: 84px; }
+
+.ppf-select-wrap { position: relative; }
+.ppf-select { appearance: none; padding-right: 36px; cursor: pointer; }
+.ppf-select-arrow {
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: #c8702a;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.ppf-error-msg {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: #e05252;
+  padding-left: 2px;
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+.ppf-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 32px 28px;
+}
+
+.ppf-back-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #8a7060;
+  background: none;
+  border: 1.5px solid rgba(180,130,80,0.3);
+  border-radius: 10px;
+  padding: 13px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.ppf-back-btn:hover { color: #3d2010; border-color: #c8702a; }
+
+.ppf-next-btn {
+  flex: 1;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #c8702a 0%, #e8962e 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 16px rgba(200,112,42,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.ppf-next-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(200,112,42,0.45);
+}
+.ppf-next-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.ppf-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ppf-spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes ppf-spin { to { transform: rotate(360deg) } }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 520px) {
+  .ppf-header { padding: 24px 22px 0; }
+  .ppf-body { padding: 20px 22px; }
+  .ppf-footer { padding: 8px 22px 24px; }
+  .ppf-title { font-size: 24px; }
+}

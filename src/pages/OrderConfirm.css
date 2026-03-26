@@ -1,0 +1,242 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+.oc-page {
+  min-height: 100vh;
+  background: linear-gradient(150deg, #1a0c06 0%, #2e1508 40%, #1a0c06 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  font-family: 'DM Sans', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle grain */
+.oc-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.oc-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Card ──────────────────────────────────────────────── */
+.oc-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 520px;
+  background: linear-gradient(160deg, #fdfaf6 0%, #f9f3ea 100%);
+  border-radius: 28px;
+  padding: 48px 44px;
+  box-shadow:
+    0 0 0 1px rgba(220,170,100,0.2),
+    0 40px 100px rgba(0,0,0,0.5),
+    0 0 60px rgba(220,140,60,0.08);
+  text-align: center;
+  animation: oc-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes oc-rise {
+  from { opacity: 0; transform: translateY(40px) scale(0.95) }
+  to   { opacity: 1; transform: translateY(0) scale(1) }
+}
+
+/* ── Glow ──────────────────────────────────────────────── */
+.oc-glow {
+  position: absolute;
+  top: -40px; left: 50%;
+  transform: translateX(-50%);
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(230,150,60,0.3) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Badge ─────────────────────────────────────────────── */
+.oc-badge {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  animation: oc-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+@keyframes oc-pop {
+  from { opacity: 0; transform: scale(0.5) }
+  to   { opacity: 1; transform: scale(1) }
+}
+
+.oc-badge-ring {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8702a, #e8962e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(200,112,42,0.4), 0 0 0 8px rgba(200,112,42,0.1);
+}
+
+.oc-check {
+  font-size: 32px;
+  color: #fff;
+  line-height: 1;
+}
+
+/* ── Text ──────────────────────────────────────────────── */
+.oc-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c8702a;
+  margin-bottom: 10px;
+  animation: oc-fade 0.5s ease 0.4s both;
+}
+
+.oc-heading {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #1a0f08;
+  margin: 0 0 12px;
+  animation: oc-fade 0.5s ease 0.5s both;
+}
+.oc-heading em {
+  font-style: italic;
+  color: #c8702a;
+}
+
+.oc-subtext {
+  font-size: 15px;
+  color: #7a5f44;
+  margin: 0 0 24px;
+  line-height: 1.6;
+  animation: oc-fade 0.5s ease 0.55s both;
+}
+
+@keyframes oc-fade {
+  from { opacity: 0; transform: translateY(10px) }
+  to   { opacity: 1; transform: translateY(0) }
+}
+
+/* ── Divider ───────────────────────────────────────────── */
+.oc-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,140,80,0.3), transparent);
+  margin: 0 0 20px;
+}
+
+/* ── Details grid ──────────────────────────────────────── */
+.oc-details {
+  background: rgba(200,140,80,0.06);
+  border: 1px solid rgba(200,140,80,0.15);
+  border-radius: 14px;
+  padding: 6px 0;
+  margin-bottom: 16px;
+  animation: oc-fade 0.5s ease 0.65s both;
+}
+
+.oc-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(200,140,80,0.1);
+}
+.oc-detail-row:last-child { border-bottom: none; }
+
+.oc-detail-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+.oc-detail-label { font-size: 13px; color: #9a7a5a; flex: 1; text-align: left; }
+.oc-detail-value { font-size: 13px; font-weight: 600; color: #3d2010; text-align: right; }
+
+/* ── Email notice ──────────────────────────────────────── */
+.oc-email-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #7a5f44;
+  background: rgba(200,140,80,0.07);
+  border: 1px dashed rgba(200,140,80,0.25);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  animation: oc-fade 0.5s ease 0.7s both;
+}
+.oc-email-icon { font-size: 15px; }
+.oc-email-notice strong { color: #3d2010; }
+
+/* ── Next steps ────────────────────────────────────────── */
+.oc-next {
+  background: #fff;
+  border: 1px solid rgba(200,140,80,0.15);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  text-align: left;
+  animation: oc-fade 0.5s ease 0.75s both;
+}
+
+.oc-next-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c8702a;
+  margin-bottom: 14px;
+}
+
+.oc-next-steps { display: flex; flex-direction: column; gap: 12px; }
+
+.oc-next-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13.5px;
+  color: #4a3020;
+  line-height: 1.5;
+}
+
+.oc-next-num {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8702a, #e8962e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+/* ── Footer ────────────────────────────────────────────── */
+.oc-footer-note {
+  font-size: 12.5px;
+  color: #b09070;
+  animation: oc-fade 0.5s ease 0.85s both;
+}
+.oc-footer-note a {
+  color: #c8702a;
+  text-decoration: none;
+  font-weight: 500;
+}
+.oc-footer-note a:hover { text-decoration: underline; }
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .oc-card { padding: 36px 24px; }
+  .oc-heading { font-size: 28px; }
+}

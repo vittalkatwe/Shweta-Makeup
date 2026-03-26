@@ -8,9 +8,9 @@ export default function StickyBar() {
     <div className="sticky-bar">
       <div>
         <div className="sticky-price">
-          ₹1999/- <span className="original">₹4,999</span>
+          ₹499/- <span className="original">₹999</span>
         </div>
-        <div className="sticky-offer-text">🌟 Limited-Time — 60% Off</div>
+        <div className="sticky-offer-text">🌟 Limited-Time — 50% Off</div>
       </div>
       <a href={CHECKOUT_URL} className="sticky-cta">
         🚀 Join Now

@@ -1,462 +1,314 @@
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, Loader, Shield, Clock, Wallet, RefreshCw, Zap } from 'lucide-react';
+import { Loader, XCircle } from 'lucide-react';
 import './PaymentPage.css'
+import PostPaymentForm from './PostPaymentForm'
+import OrderConfirm from './OrderConfirm'
 
-const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
 
+const COURSE_AMOUNT     = 1;
+const ORIGINAL_AMOUNT   = 999;
+const GST_AMOUNT        = 0;
+const DISCOUNTED_AMOUNT = 1;
+
 function PaymentPage({ onBackToHome } = {}) {
-  const [currentPage, setCurrentPage] = useState('checkout');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: ''
-  });
-  const [paymentStatus, setPaymentStatus] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [nextBillingDate, setNextBillingDate] = useState(null);
+  const [formData, setFormData]               = useState({ name: '', email: '', phone: '', state: 'Karnataka' })
+  const [paymentStatus, setPaymentStatus]     = useState(null)
+  const [showProfileForm, setShowProfileForm] = useState(false)
+  const [profileData, setProfileData]         = useState(null)
+  const [loading, setLoading]                 = useState(false)
+  const [couponOpen, setCouponOpen]           = useState(false)
+  const [gstOpen, setGstOpen]                 = useState(false)
+  const [couponCode, setCouponCode]           = useState('')
 
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
 
-  const redirectToOrderConfirm = () => {
-    setTimeout(() => {
-      window.location.href = "https://www.paisaalert.in/orderconfirm";
-    }, 2000);
-  };
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
-  const handleSubscriptionPayment = async () => {
-    if (!formData.name || !formData.email || !formData.phone) {
-      alert('Please fill all the fields');
-      return;
+  const handlePayment = async () => {
+    if (!formData.name || !formData.phone) {
+      alert('Please fill in your name and phone number')
+      return
     }
-
-    setLoading(true);
-
+    setLoading(true)
     try {
-      const scriptLoaded = await loadRazorpayScript();
+      const scriptLoaded = await loadRazorpayScript()
       if (!scriptLoaded) {
-        alert('Razorpay SDK failed to load. Please check your internet connection.');
-        setLoading(false);
-        return;
+        alert('Razorpay SDK failed to load. Please check your internet connection.')
+        setLoading(false)
+        return
       }
 
-      // Create one-time order
       const response = await fetch(`${BACKEND_URL}/api/create-order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone
-        })
-      });
+          name:   formData.name,
+          email:  formData.email || null,
+          phone:  formData.phone,
+          amount: COURSE_AMOUNT,
+        }),
+      })
 
-      const data = await response.json();
-
+      const data = await response.json()
       if (!data.success) {
-        alert('Failed to create order. Please try again.');
-        setLoading(false);
-        return;
+        alert('Failed to create order. Please try again.')
+        setLoading(false)
+        return
       }
 
-      console.log('✅ Order created:', data.orderId);
-
-      // Open Razorpay order checkout
       const options = {
-        key: RAZORPAY_KEY_ID,
-        order_id: data.orderId,
-        name: 'PaisaAlert',
-        description: '₹499 Today',
-        handler: async function (response) {
-          console.log('✅ Payment successful!', response);
-          
-          setPaymentStatus('success');
-
-          // Webhook will handle email sending
-          redirectToOrderConfirm();
-        },
-        prefill: {
-          name: formData.name,
-          email: formData.email,
-          contact: formData.phone
-        },
-        theme: {
-          color: '#4C5FD5'
-        },
-        modal: {
-          ondismiss: function() {
-            console.log('⚠️ Payment modal dismissed');
-            setPaymentStatus('failed');
-            setLoading(false);
+        key:         RAZORPAY_KEY_ID,
+        order_id:    data.orderId,
+        name:        'Shweta Celeb Makeover',
+        description: `Core Of Makeup — ₹${COURSE_AMOUNT}`,
+        handler: async function (razorpayResponse) {
+          try {
+            await fetch(`${BACKEND_URL}/api/verify-payment`, {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id:   razorpayResponse.razorpay_order_id,
+                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+                razorpay_signature:  razorpayResponse.razorpay_signature,
+              }),
+            })
+          } catch (err) {
+            console.error('Payment verification error:', err)
           }
-        }
-      };
+          setPaymentStatus('success')
+          setShowProfileForm(true)
+        },
+        prefill: { name: formData.name, email: formData.email || '', contact: formData.phone },
+        theme: { color: '#17120e' },
+        modal: {
+          ondismiss: function () {
+            setPaymentStatus('failed')
+            setLoading(false)
+          },
+        },
+      }
 
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
-      setLoading(false);
-
+      const paymentObject = new window.Razorpay(options)
+      paymentObject.open()
+      setLoading(false)
     } catch (error) {
-      console.error('Payment error:', error);
-      alert('Failed to initiate payment. Please try again.');
-      setLoading(false);
+      console.error('Payment error:', error)
+      alert('Failed to initiate payment. Please try again.')
+      setLoading(false)
     }
-  };
-
-  if (currentPage === 'checkout' && !paymentStatus) {
-    const canPay = Boolean(formData.name && formData.email && formData.phone)
-
-    return (
-      <div className="pp-page">
-        <div className="pp-container">
-          <div className="pp-grid">
-            <div className="pp-left">
-              <div className="pp-left-brand">LAVISHA AORRA</div>
-
-              <h1 className="pp-course-title">Core Of Makeup</h1>
-              <div className="pp-course-by">By Lavisha Arora</div>
-
-              <div className="pp-price-row">
-                <div className="pp-original-price">
-                  <span className="pp-original-amount">₹4999</span>
-                  <span className="pp-original-note">(inclusive of GST)</span>
-                </div>
-                <div className="pp-current-price">
-                  <span className="pp-current-currency">₹</span>
-                  499
-                </div>
-              </div>
-
-              <div className="pp-course-banner" aria-hidden="true">
-                <div className="pp-banner-text">
-                  <div className="pp-banner-line1">Core of</div>
-                  <div className="pp-banner-line2">Makeup</div>
-                </div>
-              </div>
-
-              <div className="pp-course-copy">
-                <p className="pp-course-paragraph">
-                  Welcome to “Core of Makeup” Discover the Art of Flawless Makeup in One Course!
-                </p>
-                <p className="pp-course-paragraph">
-                  <strong>Why Core of Makeup?</strong>
-                </p>
-                <p className="pp-course-paragraph">
-                  The “Core of Makeup” course offers a deep dive into the world of beauty and makeup, crafted
-                  especially for beginners who are passionate about mastering their art and becoming a pro.
-                </p>
-                <h3 className="pp-course-subheading">This is for you if you want to learn</h3>
-                <p className="pp-course-paragraph">Enroll Now</p>
-              </div>
-            </div>
-
-            <div className="pp-right">
-              <div className="pp-right-header">
-                <div className="pp-right-title">Payment details</div>
-                <div className="pp-right-subtitle">
-                  Complete your purchase by providing your payment details.
-                </div>
-              </div>
-
-              <div className="pp-right-sticky">
-                <div className="pp-panel">
-                  <div className="pp-section-title">Billing information</div>
-
-                  <div className="pp-form">
-                    <input
-                      className="pp-input"
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Name"
-                    />
-
-                    <input
-                      className="pp-input"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="Email"
-                    />
-
-                    <div className="pp-phone-row">
-                      <div className="pp-phone-prefix" aria-hidden="true">
-                        <span className="pp-phone-flag" />
-                        <span className="pp-phone-code">+91</span>
-                      </div>
-                      <input
-                        className="pp-input pp-phone-input"
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="Phone"
-                      />
-                    </div>
-
-                    <select
-                      className="pp-input pp-select"
-                      name="state"
-                      value={formData.state || 'Karnataka'}
-                      onChange={handleInputChange}
-                    >
-                      <option value="Karnataka">Karnataka</option>
-                    </select>
-                  </div>
-
-                  <div className="pp-coupon-row">
-                    <span className="pp-coupon-label">Have a coupon?</span>
-                    <button type="button" className="pp-plus-btn" aria-label="Add coupon">
-                      +
-                    </button>
-                  </div>
-
-                  <div className="pp-service-box">
-                    <div className="pp-service-title">Service</div>
-                    <div className="pp-service-name">Core Of Makeup</div>
-
-                    <div className="pp-service-lines">
-                      <div className="pp-service-line">
-                        <span className="pp-service-muted">₹499</span>
-                        <span className="pp-service-amount">₹499.00</span>
-                      </div>
-                      <div className="pp-service-line">
-                        <span className="pp-service-muted">GST</span>
-                        <span className="pp-service-amount">₹0.00</span>
-                      </div>
-                    </div>
-
-                    <div className="pp-amount-row">
-                      <span className="pp-amount-label">Amount to be paid :</span>
-                      <span className="pp-amount-value">₹499.00</span>
-                    </div>
-
-                    <div className="pp-gst-accordion">
-                      <div className="pp-gst-accordion-left">
-                        <div className="pp-gst-accordion-title">Add GST (optional)</div>
-                      </div>
-                      <button type="button" className="pp-plus-btn pp-plus-btn-large" aria-label="Toggle GST">
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pp-sticky-cta">
-                  <button
-                    type="button"
-                    className={`pp-proceed-btn ${loading || !canPay ? 'is-disabled' : ''}`}
-                    onClick={handleSubscriptionPayment}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader size={18} className="pp-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>Proceed to pay ₹499.00</>
-                    )}
-                  </button>
-
-                  <div className="pp-pay-methods" aria-hidden="true">
-                    <span className="pp-method pp-method-upi">UPI</span>
-                    <span className="pp-method pp-method-paytm">Paytm</span>
-                    <span className="pp-method pp-method-visa">VISA</span>
-                    <span className="pp-method pp-method-rupay">RuPay</span>
-                    <span className="pp-method pp-method-mastercard">Master</span>
-                    <span className="pp-method pp-method-cards">Card</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pp-footnote">
-                <div className="pp-footnote-text">
-                  By proceeding, you authorize ₹499 charge today.
-                  <br />
-                  One-time payment only. Secured by Razorpay.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   }
 
-  if (paymentStatus) {
+  // Step 3 – confirmation
+  if (profileData) {
+    return <OrderConfirm paymentData={formData} profileData={profileData} />
+  }
+
+  // Step 2 – profile form
+  if (showProfileForm) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        background: '#F5F5F5',
+      <div>
+        <div style={{ minHeight: '100vh', background: '#f6f2ec', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ color: '#b8912a', fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontStyle: 'italic', opacity: 0.6 }}>
+            Payment confirmed ✓
+          </div>
+        </div>
+        <PostPaymentForm
+          paymentData={formData}
+          onComplete={(profile) => setProfileData({ ...profile, name: formData.name })}
+        />
+      </div>
+    )
+  }
+
+  // Step 1 – failed state
+  if (paymentStatus === 'failed') {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#f6f2ec',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px'
+        padding: 20,
+        fontFamily: "'DM Sans', system-ui, sans-serif",
       }}>
         <div style={{
-          maxWidth: '500px',
+          maxWidth: 380,
           width: '100%',
-          background: 'white',
-          borderRadius: '12px',
-          padding: '50px 40px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-          textAlign: 'center'
+          background: '#fffefb',
+          borderRadius: 16,
+          padding: '44px 32px',
+          textAlign: 'center',
+          border: '1px solid #e2dbd0',
+          boxShadow: '0 12px 40px rgba(23,18,14,0.12)',
         }}>
-          {paymentStatus === 'success' ? (
-            <>
-              <div style={{
-                width: '80px',
-                height: '80px',
-                background: '#DEF7EC',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 25px'
-              }}>
-                <CheckCircle size={45} style={{ color: '#0E9F6E' }} />
-              </div>
-              <h2 style={{
-                fontSize: '28px',
-                fontWeight: '600',
-                margin: '0 0 15px 0',
-                color: '#333'
-              }}>
-                Payment Successful!
-              </h2>
-              <p style={{
-                fontSize: '15px',
-                color: '#6B7280',
-                margin: '0 0 25px 0',
-                lineHeight: '1.6'
-              }}>
-                ₹499 charged successfully. Your one-time access is now confirmed.
-              </p>
-              
-              <div style={{
-                background: '#F0F4FF',
-                border: '2px solid #4C5FD5',
-                borderRadius: '8px',
-                padding: '20px',
-                marginBottom: '20px',
-                textAlign: 'left'
-              }}>
-                <div style={{ marginBottom: '15px' }}>
-                  <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '5px' }}>
-                    ✓ One-time payment
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
-                    ₹499 charged
-                  </div>
-                </div>
-                
-                <div>
-                  <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '5px' }}>
-                    ✓ Access confirmed
-                  </div>
-                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#FF9800' }}>
-                    ₹499
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                background: '#F9FAFB',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                padding: '15px',
-                marginBottom: '25px',
-                textAlign: 'left'
-              }}>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 5px 0' }}>
-                  File sent to:
-                </p>
-                <p style={{ fontSize: '15px', fontWeight: '600', color: '#333', margin: 0 }}>
-                  {formData.email}
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{
-                width: '80px',
-                height: '80px',
-                background: '#FEE2E2',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 25px'
-              }}>
-                <XCircle size={45} style={{ color: '#DC2626' }} />
-              </div>
-              <h2 style={{
-                fontSize: '28px',
-                fontWeight: '600',
-                margin: '0 0 15px 0',
-                color: '#333'
-              }}>
-                Payment Failed
-              </h2>
-              <p style={{
-                fontSize: '15px',
-                color: '#6B7280',
-                margin: '0 0 30px 0',
-                lineHeight: '1.6'
-              }}>
-                Your payment could not be processed. Please try again.
-              </p>
-            </>
-          )}
-
+          <div style={{
+            width: 68, height: 68,
+            background: '#fef2f2',
+            borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 20px',
+            border: '1px solid #fecaca',
+          }}>
+            <XCircle size={36} style={{ color: '#c0392b' }} />
+          </div>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: 28, fontWeight: 300,
+            letterSpacing: '0.02em',
+            marginBottom: 8,
+            color: '#17120e',
+          }}>
+            Payment Failed
+          </h2>
+          <p style={{ fontSize: 13, color: '#7a6d64', marginBottom: 28, lineHeight: 1.6, fontWeight: 300 }}>
+            Your payment could not be processed. Please try again.
+          </p>
           <button
             onClick={() => {
-              setCurrentPage('checkout');
-              setPaymentStatus(null);
-              setFormData({ name: '', email: '', phone: '' });
-              if (typeof onBackToHome === 'function') onBackToHome();
+              setPaymentStatus(null)
+              setFormData({ name: '', email: '', phone: '', state: 'Karnataka' })
+              if (typeof onBackToHome === 'function') onBackToHome()
             }}
             style={{
-              width: '100%',
-              padding: '14px',
-              background: 'linear-gradient(135deg, #4C5FD5 0%, #5B6FE8 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '16px',
-              fontWeight: '600',
+              width: '100%', padding: '14px 20px',
+              background: 'linear-gradient(135deg, #1f1710 0%, #3a2f27 50%, #2a1f16 100%)',
+              color: '#d4aa4e',
+              border: 'none', borderRadius: 8,
+              fontSize: 14, fontWeight: 600,
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              letterSpacing: '0.04em',
               cursor: 'pointer',
-              transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
           >
-            Back to Home
+            Try Again
           </button>
         </div>
       </div>
-    );
+    )
   }
+
+  const canPay = Boolean(formData.name && formData.phone)
+
+  const INDIAN_STATES = [
+    'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
+    'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
+    'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab',
+    'Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh',
+    'Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh',
+  ]
+
+  return (
+    <div className="pp-page">
+
+      {/* ── Top nav ── */}
+      <div className="pp-topbar">
+        <button className="pp-back-btn" onClick={() => typeof onBackToHome === 'function' && onBackToHome()}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
+        </button>
+        <div className="pp-brand-logo">Shweta Celeb<br />Makeover</div>
+      </div>
+
+      {/* ── Scrollable content ── */}
+      <div className="pp-content">
+        <div className="pp-page-title">Payment details</div>
+        <div className="pp-page-subtitle">Complete your purchase by providing your details below.</div>
+
+        {/* Billing card */}
+        <div className="pp-card">
+          <div className="pp-billing-title">Billing information</div>
+
+          <div className="pp-field-divider" />
+          <div className="pp-input-row">
+            <input className="pp-bare-input" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Full name" />
+          </div>
+
+       
+
+          <div className="pp-field-divider" />
+          <div className="pp-input-row">
+            <div className="pp-phone-flag-block">
+              <span style={{ fontSize: 18, lineHeight: 1 }}>🇮🇳</span>
+              <span className="pp-phone-code">+91</span>
+              <span className="pp-phone-chevron">▾</span>
+            </div>
+            <div className="pp-phone-divider" />
+            <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" />
+          </div>        </div>
+
+        {/* Coupon card */}
+        {/* <div className="pp-card">
+          <div className="pp-expandable-row" onClick={() => setCouponOpen(o => !o)}>
+            <div className="pp-expandable-left">
+              <div className="pp-row-icon">🏷</div>
+              <span className="pp-expandable-label">Have a coupon?</span>
+            </div>
+            <div className="pp-plus-icon">{couponOpen ? '−' : '+'}</div>
+          </div>
+          {couponOpen && (
+            <div className="pp-coupon-input-wrap">
+              <input className="pp-coupon-input" placeholder="Enter coupon code" value={couponCode} onChange={e => setCouponCode(e.target.value)} />
+              <button className="pp-coupon-apply">Apply</button>
+            </div>
+          )}
+        </div> */}
+
+        {/* Service + total card */}
+        <div className="pp-card">
+          <div className="pp-service-section">
+            <div className="pp-service-line">
+              <span className="pp-service-name">3-Day Hairstyle Masterclass</span>
+              <div className="pp-service-prices">
+                <span className="pp-orig-price">₹{ORIGINAL_AMOUNT}</span>
+                <span className="pp-disc-price">₹{DISCOUNTED_AMOUNT.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="pp-amount-divider" />
+          <div className="pp-total-line">
+            <span className="pp-total-label">Amount to be paid</span>
+            <span className="pp-total-value">₹{COURSE_AMOUNT}.00</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── Sticky bottom bar ── */}
+      <div className="pp-sticky-bar">
+        <button
+          type="button"
+          className={`pp-proceed-btn${loading || !canPay ? ' is-disabled' : ''}`}
+          onClick={handlePayment}
+          disabled={loading || !canPay}
+        >
+          {loading
+            ? <><Loader size={17} className="pp-spin" /> Processing…</>
+            : <>Proceed to pay ₹{COURSE_AMOUNT}.00</>
+          }
+        </button>
+        <div className="pp-pay-methods">
+          <span className="pp-method pp-method-upi">UPI</span>
+          <span className="pp-method pp-method-paytm">Paytm</span>
+          <span className="pp-method pp-method-visa">VISA</span>
+          <span className="pp-method pp-method-mastercard">Master</span>
+          <span className="pp-method pp-method-rupay">RuPay</span>
+          <span className="pp-method pp-method-gpay">GPay</span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default PaymentPage;

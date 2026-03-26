@@ -6,41 +6,47 @@ const CHECKOUT_URL =
 const parts = [
   {
     label: 'Part 1',
-    title: 'Understanding Your Skin & Preparing for Makeup',
+    title: 'Front Hairstyle Mastery',
     items: [
-      { bold: 'Course Introduction', text: '– Learn about the course structure and how to get the best learning experience.' },
-      { bold: 'Knowing Your Skin Type', text: '– Identify whether your skin is oily, dry, or normal and choose the right products.' },
-      { bold: 'Skincare Product Knowledge', text: '– Understand essential skincare steps for a smooth and glowing base.' },
+      { bold: 'Learn 12 different front hairstyle variations', text: 'for different face shapes, occasions, and looks.' },
+      { bold: 'Create styles that look modern, trendy, and client-ready', text: '– perfect for real salon use.' },
+      { bold: 'Understand how to adjust styles', text: 'based on hair volume and length for every client.' },
     ],
   },
   {
     label: 'Part 2',
-    title: 'Learning Makeup Products & Tools',
+    title: '👰 Bridal Hairstyling',
     items: [
-      { bold: 'Makeup Product Knowledge', text: '– Learn about different makeup products and how to use them correctly.' },
-      { bold: 'Makeup Tools Knowledge', text: '– Get familiar with brushes, sponges, and applicators for professional results.' },
-      { bold: 'Color Theory', text: '– Discover how colors work together to enhance your beauty.' },
-      { bold: 'Choosing the Right Makeup Shades', text: '– Pick the perfect foundation, lipstick, and eyeshadow for your skin tone.' },
+      { bold: 'Step-by-step training on 2 bridal buns', text: '(perfect for weddings & events).' },
+      { bold: 'Learn how to create full, heavy, and elegant bridal looks', text: 'that wow clients.' },
+      { bold: 'Make hairstyles that last 8–10 hours', text: 'without loosening throughout the event.' },
     ],
   },
   {
     label: 'Part 3',
-    title: 'Creating a Flawless Base',
+    title: '💎 Professional Finishing',
     items: [
-      { bold: 'CTMP Process', text: '– Master the Cleanse, Tone, Moisturize, Prime routine for a long-lasting base.' },
-      { bold: 'Color Correction', text: '– Learn how to cover dark circles, redness, and blemishes using color theory.' },
-      { bold: 'Base Application Techniques', text: '– Apply foundation & concealer seamlessly for an even, smooth look.' },
+      { bold: 'Learn brooch making & styling', text: 'to give a premium, decorated finish to every look.' },
+      { bold: 'Make your hairstyles look highly-attractive and high-end', text: 'for better client satisfaction.' },
+      { bold: 'Small detailing techniques', text: 'that make a big difference in the final look.' },
     ],
   },
   {
     label: 'Part 4',
-    title: 'Eye Makeup Techniques & Signature Looks',
+    title: '⚡ Speed & Client Handling',
     items: [
-      { bold: 'Eye Shape Knowledge', text: '– Understand your eye shape and enhance it with the right makeup techniques.' },
-      { bold: 'The Nude Makeup Look', text: '– Create a soft, natural look perfect for everyday wear.' },
-      { bold: 'Matte Base with Halo Eyes', text: '– Achieve an elegant and sophisticated look for special occasions.' },
-      { bold: 'Glam Look with Smokey Eyes', text: '– Learn how to create a bold, classic smokey eye.' },
-      { bold: 'Cut Crease Eye Makeup', text: '– Master the cut crease technique for sharp, defined eye makeup.' },
+      { bold: 'Learn how to complete hairstyles in 30–40 minutes', text: 'efficiently and professionally.' },
+      { bold: 'Handle multiple clients efficiently', text: 'during busy wedding/function days without stress.' },
+      { bold: 'Work with confidence on real clients', text: 'without hesitation.' },
+    ],
+  },
+  {
+    label: 'Part 5',
+    title: '💰 Earning-Focused Skills',
+    items: [
+      { bold: 'Learn how to create hairstyles that you can charge more per client', text: 'and grow your income.' },
+      { bold: 'Offer makeup + hairstyle packages', text: 'to increase your total billing per appointment.' },
+      { bold: 'Build skills that help you start earning from home', text: 'or grow your existing orders.' },
     ],
   },
 ]
@@ -54,14 +60,14 @@ export default function Curriculum() {
             <h2 className="section-title">What You'll Learn</h2>
             <div className="section-divider" style={{ margin: '14px 0 0', textAlign: 'left' }} />
             <p style={{ marginTop: 20 }}>
-              This 16-chapter course is designed to help you master self-makeup with ease. Follow each
-              step to build your skills from the basics to advanced makeup looks.
+              This 3 Day hairstyle masterclass is designed to learn trendy Hairstyles that clients
+              actually ask for. Learn everything from essential techniques to advanced bridal styles,
+              and confidently create instagram like looks.
             </p>
           </div>
           <div className="reveal-right">
             <a href={CHECKOUT_URL} className="cta-button" style={{ maxWidth: 260, fontSize: 15, padding: '14px 24px' }}>
-              🚀 Join Now for <strong>₹1,999</strong>
-              <span className="original">₹4,999</span>
+              🚀 Join Now for <strong>₹499</strong>
             </a>
           </div>
         </div>
@@ -84,8 +90,8 @@ export default function Curriculum() {
 
         <div className="cta-center reveal">
           <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹1,999</strong>
-            <span className="original">₹4,999</span>
+            🚀 Join Now for <strong>₹499</strong>
+            <span className="original">₹999</span>
           </a>
         </div>
       </div>

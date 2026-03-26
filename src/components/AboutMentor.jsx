@@ -40,23 +40,15 @@ export default function AboutMentor() {
       <div className="about-inner">
         <div className="about-text reveal-left">
           <div className="about-eyebrow">✦ Your Mentor</div>
-          <h2 className="about-title">Meet Lavisha Arora</h2>
+          <h2 className="about-title">Meet Shweta Kapoor</h2>
           <p>
-            Hey there! I'm Lavisha Arora, your makeup mentor. With 7 years of experience as a
-            professional makeup artist and educator, I've helped beauty lovers all across India master
-            their makeup skills—and now, I'm here to help YOU!
+          Hi, I’m Shweta Kapoor — your hairstyling mentor. I have 13 years of experience as a makeup artist and teacher, and I’ve worked with many artists across India, especially from tier 2 and tier 3 cities who run their own parlours or work as freelancers. I understand your daily work, your clients, and your goal to grow in this field.
           </p>
           <p>
-            I know how frustrating it can be when makeup feels complicated. That's why I've spent
-            years{' '}
-            <span>breaking down complex techniques into easy, everyday steps</span> that anyone can
-            follow. In this course, I'll teach you everything from the basics to trendy, stunning
-            makeup looks—so you can feel beautiful in your own skin, every single day!
+          Many times, we are good at makeup but feel stuck when it comes to hairstyling. Because of this, we may miss out on giving complete services to our clients. That’s why I’ve made this course in a very simple way, where I teach hairstyling step by step so you can easily learn and use it in your real work.
           </p>
           <p>
-            Whether you're just starting out or looking to refine your skills, I've got you covered.
-            Let's dive in together—I promise, it's going to be fun, exciting, and totally
-            transformational!
+          In this course, you will learn basic to trendy hairstyles that you can do for bridal and party clients. This will help you increase your income, build confidence, and offer full services to your clients. Let’s learn together and grow your skills in an easy and practical way.
           </p>
 
           <div className="about-stat-row">
@@ -68,7 +60,7 @@ export default function AboutMentor() {
             </div>
             <div className="about-stat">
               <span className="about-stat-number">
-                <CountUp target={7} suffix=" Yrs" />
+                <CountUp target={13} suffix=" Yrs" />
               </span>
               <div className="about-stat-label">Experience</div>
             </div>
@@ -84,7 +76,7 @@ export default function AboutMentor() {
         <div className="about-img-wrapper reveal-right">
           <img
             src="https://cdn.prod.website-files.com/63c91eab7b0fc1e7492b24b0/67c46ae9cd1050f709706c2c_frame_88m.webp"
-            alt="Lavisha Arora"
+            alt="Shweta Celeb Makeover"
             loading="lazy"
           />
         </div>

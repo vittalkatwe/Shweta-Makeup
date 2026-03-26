@@ -22,8 +22,8 @@ export default function Certificate() {
 
         <div className="cta-center reveal">
           <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹1,999</strong>
-            <span className="original">₹4,999</span>
+            🚀 Join Now for <strong>₹499</strong>
+            <span className="original">₹999</span>
           </a>
         </div>
       </div>
