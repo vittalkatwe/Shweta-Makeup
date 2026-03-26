@@ -151,7 +151,7 @@ a { text-decoration: none; color: inherit; }
 
 .hero-title em {
   font-style: italic;
-  color: var(--rose-deep);
+  color: #ed4040;
   position: relative;
 }
 .hero-title em::after {
@@ -225,9 +225,9 @@ a { text-decoration: none; color: inherit; }
   background-size: 200% 200%;
   color: #fff;
   font-family: var(--font-body);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
-  padding: 20px 40px;
+  padding: 20px 30px;
   border-radius: 25px;
   border: none;
   cursor: pointer;
