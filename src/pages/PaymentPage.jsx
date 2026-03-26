@@ -228,7 +228,6 @@ function PaymentPage({ onBackToHome } = {}) {
 
         {/* Billing card */}
         <div className="pp-card">
-          <div className="pp-billing-title">Billing information</div>
 
           <div className="pp-field-divider" />
           <div className="pp-input-row">
