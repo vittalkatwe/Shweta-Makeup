@@ -5,7 +5,7 @@ const CHECKOUT_URL =
 
 const bonuses = [
   { badge: 'BONUS 1', title: '📖 Easy to Follow Chapter Notes' },
-  { badge: 'BONUS 2', title: '🛒 Product Purchase Guide ( seller details )' },
+  { badge: 'BONUS 2', title: '🛒 Product Purchase Guide (seller details)' },
 ]
 
 const delays = ['delay-1', 'delay-2']
@@ -17,10 +17,6 @@ export default function Bonuses() {
         <div className="reveal">
           <h2 className="section-title">🎁 ₹10,000 Worth of Exclusive Bonuses with this Course</h2>
           <div className="section-divider" />
-          <p className="bonus-subtitle">
-            When you join today, you get extra perks worth <span>₹10,000+</span> to help you master
-            hairstyling with confidence!
-          </p>
         </div>
 
         <div className="bonus-grid">
