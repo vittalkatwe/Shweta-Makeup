@@ -8,27 +8,29 @@
   background: rgba(10, 6, 4, 0.72);
   backdrop-filter: blur(6px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;        /* ← was center */
   justify-content: center;
   padding: 20px;
   animation: ppf-fade-in 0.35s ease;
+  overflow-y: auto;               /* ← ADD THIS */
 }
+
 
 @keyframes ppf-fade-in {
   from { opacity: 0 }
   to   { opacity: 1 }
 }
 
-/* ── Modal card ──────────────────────────────────────── */
 .ppf-modal {
   position: relative;
   width: 100%;
   max-width: 480px;
   background: #fdfaf7;
   border-radius: 24px;
-  overflow: hidden;
+  overflow: visible;              /* ← was hidden */
   box-shadow: 0 32px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(220,170,120,0.15);
   animation: ppf-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: auto;                   /* ← ADD THIS */
 }
 
 @keyframes ppf-slide-up {

@@ -4,13 +4,14 @@
   min-height: 100vh;
   background: linear-gradient(150deg, #1a0c06 0%, #2e1508 40%, #1a0c06 100%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;        /* ← was center */
   justify-content: center;
   padding: 40px 20px;
   font-family: 'DM Sans', sans-serif;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;               /* ← ADD THIS */
 }
+
 
 /* subtle grain */
 .oc-page::before {
@@ -44,6 +45,7 @@
     0 0 60px rgba(220,140,60,0.08);
   text-align: center;
   animation: oc-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  margin: auto;
 }
 
 @keyframes oc-rise {
