@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader, XCircle } from 'lucide-react';
 import './PaymentPage.css'
 import PostPaymentForm from './PostPaymentForm'
 import OrderConfirm from './OrderConfirm'
+import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 
 const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
 
-const COURSE_AMOUNT     = 1;
-const ORIGINAL_AMOUNT   = 999;
-const GST_AMOUNT        = 0;
-const DISCOUNTED_AMOUNT = 1;
 
 function PaymentPage({ onBackToHome } = {}) {
   const [formData, setFormData]               = useState({ name: '', email: '', phone: '', state: 'Karnataka' })
@@ -21,6 +18,38 @@ function PaymentPage({ onBackToHome } = {}) {
   const [couponOpen, setCouponOpen]           = useState(false)
   const [gstOpen, setGstOpen]                 = useState(false)
   const [couponCode, setCouponCode]           = useState('')
+  const [courseAmount, setCourseAmount] = useState(5000);
+  const [originalAmount, setOriginalAmount] = useState(5000);
+  const [pricingVariant, setPricingVariant] = useState("default");
+
+  
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        // Fetch and activate Firebase Remote Config
+        await fetchAndActivate(remoteConfig);
+  
+        // Get remote config values
+        const price = getValue(remoteConfig, "course_price").asString();
+        const original = getValue(remoteConfig, "original_price").asString();
+        const variant = getValue(remoteConfig, "pricing_variant").asString();
+  
+        // Update state with defaults if values are missing
+        setCourseAmount(Number(price) || 499);
+        setOriginalAmount(Number(original) || 999);
+        setPricingVariant(variant || "default");
+  
+      } catch (err) {
+        console.error("Remote config error:", err);
+        // fallback to default values
+        setCourseAmount(499);
+        setOriginalAmount(999);
+        setPricingVariant("default");
+      }
+    }
+  
+    loadConfig();
+  }, []); // run once on mount
 
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
 
@@ -54,7 +83,7 @@ function PaymentPage({ onBackToHome } = {}) {
           name:   formData.name,
           email:  formData.email || null,
           phone:  formData.phone,
-          amount: COURSE_AMOUNT,
+          amount: courseAmount,
         }),
       })
 
@@ -69,7 +98,7 @@ function PaymentPage({ onBackToHome } = {}) {
         key:         RAZORPAY_KEY_ID,
         order_id:    data.orderId,
         name:        'Shweta Celeb Makeover',
-        description: `Core Of Makeup — ₹${COURSE_AMOUNT}`,
+        description: `Core Of Makeup — ₹${courseAmount}`,
         handler: async function (razorpayResponse) {
           try {
             await fetch(`${BACKEND_URL}/api/verify-payment`, {
@@ -84,6 +113,16 @@ function PaymentPage({ onBackToHome } = {}) {
           } catch (err) {
             console.error('Payment verification error:', err)
           }
+
+          window.clevertap?.event.push("Payment Success", {
+            amount: courseAmount,
+            original_price: originalAmount,
+            pricing_variant: pricingVariant,
+            course_name: "3-Day Hairstyle Masterclass",
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            phone: formData.phone
+          });
+                
           setPaymentStatus('success')
           setShowProfileForm(true)
         },
@@ -270,15 +309,15 @@ function PaymentPage({ onBackToHome } = {}) {
             <div className="pp-service-line">
               <span className="pp-service-name">3-Day Hairstyle Masterclass</span>
               <div className="pp-service-prices">
-                <span className="pp-orig-price">₹{ORIGINAL_AMOUNT}</span>
-                <span className="pp-disc-price">₹{DISCOUNTED_AMOUNT.toFixed(2)}</span>
+                <span className="pp-orig-price">₹{originalAmount}</span>
+                <span className="pp-disc-price">₹{courseAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
           <div className="pp-amount-divider" />
           <div className="pp-total-line">
             <span className="pp-total-label">Amount to be paid</span>
-            <span className="pp-total-value">₹{COURSE_AMOUNT}.00</span>
+            <span className="pp-total-value">₹{courseAmount}.00</span>
           </div>
         </div>
 
@@ -294,7 +333,7 @@ function PaymentPage({ onBackToHome } = {}) {
         >
           {loading
             ? <><Loader size={17} className="pp-spin" /> Processing…</>
-            : <>Proceed to pay ₹{COURSE_AMOUNT}.00</>
+            : <>Proceed to pay ₹{courseAmount}.00</>
           }
         </button>
         <div className="pp-pay-methods">
