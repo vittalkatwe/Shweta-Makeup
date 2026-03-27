@@ -44,7 +44,7 @@ export default function StickyBar() {
     <div className="sticky-bar">
       <div>
         <div className="sticky-price">
-          ₹{courseAmount}/- <span className="original">₹{originalAmount}</span>
+          ₹{courseAmount}/-
         </div>
         <div className="sticky-offer-text">🌟 Limited-Time Offer</div>
       </div>

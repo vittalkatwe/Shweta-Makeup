@@ -415,7 +415,6 @@ export default function HeroSection() {
 
           <a href={CHECKOUT_URL} className="cta-button" style={{ animation: 'fadeSlideUp 1s cubic-bezier(0.16,1,0.3,1) 0.9s both' }}>
             🚀 Join Now for <strong>₹{courseAmount}</strong>
-            <span className="original">₹{originalAmount}</span>
           </a>
 
         </div>

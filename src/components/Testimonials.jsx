@@ -228,7 +228,7 @@ export default function Testimonials() {
         /* ── Card wrapper ── */
         .tm-video-card {
           position: relative;
-          width: 100%;
+          width: 80%;
           max-width: 340px;
           margin: 0 auto;
           aspect-ratio: 9 / 16;
