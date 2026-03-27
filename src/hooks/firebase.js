@@ -5,13 +5,13 @@ import { getRemoteConfig, fetchAndActivate, getValue } from "firebase/remote-con
 
 // Your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyD5nbQKzKksks345VwK1hf823gVTlJ-08A",
-  authDomain: "shweta-makeover.firebaseapp.com",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: "shweta-makeover",
   storageBucket: "shweta-makeover.firebasestorage.app",
-  messagingSenderId: "2721051979",
-  appId: "1:2721051979:web:cc91e7d8cf0efebeaa24ce",
-  measurementId: "G-BRXB3T50XX"
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
