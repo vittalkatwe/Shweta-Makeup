@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
+
 const CHECKOUT_URL = '/?payment=1'
 
 const NOTIFICATIONS = [
@@ -23,15 +25,11 @@ function SocialProofTicker() {
   const showNext = () => {
     const notif = NOTIFICATIONS[indexRef.current % NOTIFICATIONS.length]
     indexRef.current += 1
-
     setExiting(false)
     setActive({ ...notif, id: Date.now() })
-
     timerRef.current = setTimeout(() => {
       setExiting(true)
-      setTimeout(() => {
-        showNext()
-      }, 420)
+      setTimeout(() => { showNext() }, 420)
     }, 2600)
   }
 
@@ -160,6 +158,58 @@ const features = [
 ]
 
 export default function HeroSection() {
+
+  
+  const [courseAmount, setCourseAmount] = useState(5000);
+  const [originalAmount, setOriginalAmount] = useState(5000);
+  const [pricingVariant, setPricingVariant] = useState("default");
+
+  
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        // Fetch and activate Firebase Remote Config
+        await fetchAndActivate(remoteConfig);
+  
+        // Get remote config values
+        const price = getValue(remoteConfig, "course_price").asString();
+        const original = getValue(remoteConfig, "original_price").asString();
+        const variant = getValue(remoteConfig, "pricing_variant").asString();
+  
+        // Update state with defaults if values are missing
+        setCourseAmount(Number(price) || 499);
+        setOriginalAmount(Number(original) || 999);
+        setPricingVariant(variant || "default");
+  
+      } catch (err) {
+        console.error("Remote config error:", err);
+        // fallback to default values
+        setCourseAmount(499);
+        setOriginalAmount(999);
+        setPricingVariant("default");
+      }
+    }
+  
+    loadConfig();
+  }, []); // run once on mount
+
+  const videoRef = useRef(null)
+  const [isMuted, setIsMuted] = useState(true)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.muted = true
+    video.play().catch(() => {})
+  }, [])
+
+  const toggleMute = () => {
+    const video = videoRef.current
+    if (!video) return
+    video.muted = !video.muted
+    setIsMuted(video.muted)
+  }
+
   return (
     <>
       <style>{`
@@ -173,7 +223,7 @@ export default function HeroSection() {
         }
         @keyframes pulseDot {
           0%, 100% { transform: scale(1); opacity: 1; }
-          50%       { transform: scale(1.5); opacity: 0.7; }
+          50%       { transform: scale(1.6); opacity: 0.6; }
         }
         @keyframes ringPulse {
           0%   { transform: scale(0.6); opacity: 0.8; }
@@ -196,12 +246,6 @@ export default function HeroSection() {
         .social-proof-ticker {
           display: inline-flex;
           align-items: center;
-          // background: linear-gradient(
-          //   135deg,
-          //   rgba(232,146,124,0.18) 0%,
-          //   rgba(201,169,110,0.18) 50%,
-          //   rgba(232,146,124,0.18) 100%
-          // );
           background: #fffdf5;
           border: 1px solid rgba(255, 200, 130, 0.42);
           backdrop-filter: blur(18px);
@@ -251,33 +295,6 @@ export default function HeroSection() {
           border-radius: 999px;
         }
 
-        .ticker-pulse-ring {
-          position: relative;
-          width: 10px;
-          height: 10px;
-          flex-shrink: 0;
-        }
-
-        .ticker-pulse {
-          position: absolute;
-          inset: 0;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: #4ade80;
-          animation: pulseDot 1.6s ease-in-out infinite;
-          box-shadow: 0 0 6px rgba(74, 222, 128, 0.7);
-        }
-
-        .ticker-pulse::after {
-          content: '';
-          position: absolute;
-          inset: -4px;
-          border-radius: 50%;
-          border: 1.5px solid rgba(74, 222, 128, 0.55);
-          animation: ringPulse 1.6s ease-out infinite;
-        }
-
         .ticker-bolt {
           font-size: 0.88rem;
           flex-shrink: 0;
@@ -303,8 +320,58 @@ export default function HeroSection() {
         }
 
         .ticker-action {
-          color: 7a5c52;
+          color: #7a5c52;
           font-weight: 400;
+        }
+
+        .video-container {
+          position: relative;
+          width: 100%;
+          border-radius: 16px;
+          overflow: hidden;
+          cursor: pointer;
+        }
+
+        .hero-video {
+          width: 100%;
+          border-radius: 16px;
+          display: block;
+          pointer-events: none;
+        }
+
+        .sound-overlay {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: rgba(0, 0, 0, 0.50);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border-radius: 999px;
+          padding: 6px 12px 6px 9px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: #fff;
+          pointer-events: none;
+          user-select: none;
+          letter-spacing: 0.04em;
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .sound-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          background: #f87171;
+          animation: pulseDot 1.4s ease-in-out infinite;
+        }
+
+        .sound-overlay.unmuted .sound-dot {
+          background: #4ade80;
+          animation: none;
         }
       `}</style>
 
@@ -319,17 +386,21 @@ export default function HeroSection() {
             Stop Losing Time & Clients
           </h1>
 
-          <div className="video-container">
-            <div className="video-glow" />
-            <div className="video-wrapper">
-              <iframe
-                src="//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Ffast.wistia.net%2Fembed%2Fiframe%2F0z7k3o9rvk&display_name=Wistia%2C+Inc.&url=https%3A%2F%2Flavishawebflow.wistia.com%2Fmedias%2F0z7k3o9rvk&image=https%3A%2F%2Fembed-ssl.wistia.com%2Fdeliveries%2F9c9a8211ef3635cb190cf8c1536b126f.jpg%3Fimage_crop_resized%3D960x540&key=96f1f04c5f4143bcb0f2e68c87d65feb&type=text%2Fhtml&schema=wistia"
-                width="940"
-                height="529"
-                scrolling="no"
-                allowFullScreen
-                title="Course overview"
-              />
+          <div className="video-container" onClick={toggleMute}>
+            <video
+              ref={videoRef}
+              src="https://pub-8cb3f523bbe94c609e0173a143b05f75.r2.dev/hero-section%20videos/0325(1).mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="hero-video"
+            />
+
+            <div className={`sound-overlay ${!isMuted ? 'unmuted' : ''}`}>
+              <span className="sound-dot" />
+              <span>{isMuted ? '🔇 Tap for sound' : '🔊 Sound on'}</span>
             </div>
           </div>
 
@@ -343,9 +414,10 @@ export default function HeroSection() {
           </div>
 
           <a href={CHECKOUT_URL} className="cta-button" style={{ animation: 'fadeSlideUp 1s cubic-bezier(0.16,1,0.3,1) 0.9s both' }}>
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+            🚀 Join Now for <strong>₹{courseAmount}</strong>
+            <span className="original">₹{originalAmount}</span>
           </a>
+
         </div>
       </section>
     </>

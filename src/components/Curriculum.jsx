@@ -1,4 +1,6 @@
 import React from 'react'
+import { useState, useEffect } from 'react';
+import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 
 const CHECKOUT_URL =
   '/?payment=1'
@@ -52,6 +54,41 @@ const parts = [
 ]
 
 export default function Curriculum() {
+
+  
+  const [courseAmount, setCourseAmount] = useState(5000);
+  const [originalAmount, setOriginalAmount] = useState(5000);
+  const [pricingVariant, setPricingVariant] = useState("default");
+
+  
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        // Fetch and activate Firebase Remote Config
+        await fetchAndActivate(remoteConfig);
+  
+        // Get remote config values
+        const price = getValue(remoteConfig, "course_price").asString();
+        const original = getValue(remoteConfig, "original_price").asString();
+        const variant = getValue(remoteConfig, "pricing_variant").asString();
+  
+        // Update state with defaults if values are missing
+        setCourseAmount(Number(price) || 499);
+        setOriginalAmount(Number(original) || 999);
+        setPricingVariant(variant || "default");
+  
+      } catch (err) {
+        console.error("Remote config error:", err);
+        // fallback to default values
+        setCourseAmount(499);
+        setOriginalAmount(999);
+        setPricingVariant("default");
+      }
+    }
+  
+    loadConfig();
+  }, []); // run once on mount
+
   return (
     <section className="section curriculum-section">
       <div className="section-inner">
@@ -67,7 +104,7 @@ export default function Curriculum() {
           </div>
           <div className="reveal-right">
             <a href={CHECKOUT_URL} className="cta-button" style={{ maxWidth: 260, fontSize: 15, padding: '14px 24px' }}>
-              🚀 Join Now for <strong>₹499</strong>
+              🚀 Join Now for <strong>₹{courseAmount}</strong>
             </a>
           </div>
         </div>
@@ -90,8 +127,8 @@ export default function Curriculum() {
 
         <div className="cta-center reveal">
           <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+            🚀 Join Now for <strong>₹{courseAmount}</strong>
+            <span className="original">₹{originalAmount}</span>
           </a>
         </div>
       </div>

@@ -67,7 +67,7 @@ a { text-decoration: none; color: inherit; }
   background-size: 200% 100%;
   color: #fff;
   text-align: center;
-  padding: 13px 20px;
+  padding: 10px 20px;
   font-family: var(--font-body);
   font-size: 13.5px;
   letter-spacing: 0.04em;
@@ -606,4 +606,56 @@ a { text-decoration: none; color: inherit; }
   .sticky-price { font-size: 18px; }
   .sticky-cta { padding: 12px 20px; font-size: 13px; }
   .section { padding: 60px 16px; }
+}
+
+
+.video-container {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.hero-video {
+  width: 100%;
+  display: block;
+  border-radius: 16px;
+}
+
+/* Controls */
+.video-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.video-controls.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Buttons */
+.video-controls button {
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+
+  transition: all 0.25s ease;
+}
+
+/* Hover effect */
+.video-controls button:hover {
+  background: linear-gradient(135deg, #ff9966, #ff5e62);
+  transform: scale(1.08);
+  box-shadow: 0 8px 25px rgba(255, 100, 80, 0.4);
 }

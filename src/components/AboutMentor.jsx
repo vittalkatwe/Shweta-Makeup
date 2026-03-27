@@ -75,7 +75,7 @@ export default function AboutMentor() {
 
         <div className="about-img-wrapper reveal-right">
           <img
-            src="https://cdn.prod.website-files.com/63c91eab7b0fc1e7492b24b0/67c46ae9cd1050f709706c2c_frame_88m.webp"
+            src="https://pub-8cb3f523bbe94c609e0173a143b05f75.r2.dev/social-image.jpeg"
             alt="Shweta Celeb Makeover"
             loading="lazy"
           />
