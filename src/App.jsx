@@ -48,7 +48,7 @@ export default function App() {
       observer.disconnect()
       clearTimeout(timer)
     }
-  }, [])
+  }, [showPayment])
 
   const handleBackToHome = () => {
     const url = new URL(window.location.href)
