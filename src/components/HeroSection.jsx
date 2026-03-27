@@ -251,7 +251,8 @@ export default function HeroSection() {
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
           border-radius: 999px;
-          padding: 9px 22px 9px 14px;
+          height: 32px;
+          padding: 0px 22px 0px 14px;
           font-size: 0.70rem;
           font-weight: 500;
           letter-spacing: 0.015em;
