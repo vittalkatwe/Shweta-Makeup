@@ -66,10 +66,10 @@ export default function App() {
       <AnnouncementBar />
       <HeroSection />
       <PerfectForYou />
+      <Testimonials />
       <Curriculum />
       <Certificate />
       <AboutMentor />
-      <Testimonials />
       <Bonuses />
       <FAQ />
       <StickyBar />

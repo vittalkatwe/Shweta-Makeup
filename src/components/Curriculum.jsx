@@ -102,11 +102,11 @@ export default function Curriculum() {
               and confidently create instagram like looks.
             </p>
           </div>
-          <div className="reveal-right">
+          {/* <div className="reveal-right">
             <a href={CHECKOUT_URL} className="cta-button" style={{ maxWidth: 260, fontSize: 15, padding: '14px 24px' }}>
               🚀 Join Now for <strong>₹{courseAmount}</strong>
             </a>
-          </div>
+          </div> */}
         </div>
 
         <div className="curriculum-parts">
@@ -125,12 +125,12 @@ export default function Curriculum() {
           ))}
         </div>
 
-        <div className="cta-center reveal">
+        {/* <div className="cta-center reveal">
           <a href={CHECKOUT_URL} className="cta-button">
             🚀 Join Now for <strong>₹{courseAmount}</strong>
             <span className="original">₹{originalAmount}</span>
           </a>
-        </div>
+        </div> */}
       </div>
     </section>
   )

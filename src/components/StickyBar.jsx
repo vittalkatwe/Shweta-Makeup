@@ -46,7 +46,7 @@ export default function StickyBar() {
         <div className="sticky-price">
           ₹{courseAmount}/- <span className="original">₹{originalAmount}</span>
         </div>
-        <div className="sticky-offer-text">🌟 Limited-Time — 50% Off</div>
+        <div className="sticky-offer-text">🌟 Limited-Time Offer</div>
       </div>
       <a href={CHECKOUT_URL} className="sticky-cta">
         🚀 Join Now

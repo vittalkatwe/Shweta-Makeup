@@ -56,12 +56,12 @@ export default function Certificate() {
           />
         </div>
 
-        <div className="cta-center reveal">
+        {/* <div className="cta-center reveal">
           <a href={CHECKOUT_URL} className="cta-button">
             🚀 Join Now for <strong>₹{courseAmount}</strong>
             <span className="original">₹{originalAmount}</span>
           </a>
-        </div>
+        </div> */}
       </div>
     </section>
   )
