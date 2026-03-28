@@ -60,6 +60,11 @@ const profileSchema = new mongoose.Schema({
   occupation:    { type: String },
   reason:        { type: String },
 
+  // Course purchase tracking
+  hasPurchasedCourse:  { type: Boolean, default: false },
+  coursePurchasePrice: { type: Number },
+  courseName:          { type: String },
+
   timestamp: { type: Date, default: Date.now },
 });
 
@@ -198,6 +203,16 @@ app.post('/api/create-order', async (req, res) => {
     await payment.save();
     console.log('✅ Razorpay order created:', order.id);
 
+    // Create early profile at payment initiation
+    await Profile.create({
+      razorpayOrderId: order.id,
+      name,
+      email: email || null,
+      phone,
+      hasPurchasedCourse: false,
+    });
+    console.log('💾 Profile created for:', phone);
+
     return res.json({ success: true, orderId: order.id });
   } catch (error) {
     console.error('❌ Error creating order:', error);
@@ -212,21 +227,27 @@ app.post('/api/save-profile', async (req, res) => {
   try {
     const { name, email, phone, razorpayOrderId, whatsappPhone, gender, city, state, occupation, reason } = req.body;
 
-    const profile = new Profile({
-      name,
-      email:         email || null,
-      phone,
-      razorpayOrderId,
-      whatsappPhone: whatsappPhone || phone,
-      gender,
-      city,
-      state,
-      occupation,
-      reason,
-    });
+    const query = razorpayOrderId
+      ? { razorpayOrderId }
+      : { phone };
 
-    await profile.save();
-    console.log('💾 Profile saved for:', phone);
+    await Profile.findOneAndUpdate(
+      query,
+      {
+        $set: {
+          whatsappPhone: whatsappPhone || phone,
+          gender,
+          city,
+          state,
+          occupation,
+          reason,
+          name: name || undefined,
+          email: email || null,
+        },
+      },
+      { new: true, upsert: true }
+    );
+    console.log('💾 Profile updated for:', phone);
 
     return res.json({ success: true });
   } catch (error) {
@@ -274,6 +295,18 @@ app.post('/api/verify-payment', async (req, res) => {
     }
 
     console.log('✅ Payment verified and marked as paid:', razorpay_order_id);
+
+    // Update profile with course purchase info
+    await Profile.findOneAndUpdate(
+      { razorpayOrderId: razorpay_order_id },
+      {
+        $set: {
+          hasPurchasedCourse: true,
+          coursePurchasePrice: updatedPayment.amount,
+          courseName: '3-Day Hairstyle Masterclass',
+        },
+      }
+    );
 
     // Send confirmation email if not already sent
     if (!updatedPayment.emailSent) {
@@ -333,8 +366,21 @@ app.post('/api/webhook', async (req, res) => {
           { new: true }
         );
 
-        if (capturedPayment && !capturedPayment.emailSent) {
-          await sendConfirmationEmail(capturedPayment);
+        if (capturedPayment) {
+          await Profile.findOneAndUpdate(
+            { razorpayOrderId: orderId },
+            {
+              $set: {
+                hasPurchasedCourse: true,
+                coursePurchasePrice: capturedPayment.amount,
+                courseName: '3-Day Hairstyle Masterclass',
+              },
+            }
+          );
+
+          if (!capturedPayment.emailSent) {
+            await sendConfirmationEmail(capturedPayment);
+          }
         }
 
         break;

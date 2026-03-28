@@ -4,6 +4,7 @@ import './PaymentPage.css'
 import PostPaymentForm from './PostPaymentForm'
 import OrderConfirm from './OrderConfirm'
 import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
+import clevertap from '../hooks/clevertap';
 
 const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
@@ -21,6 +22,7 @@ function PaymentPage({ onBackToHome } = {}) {
   const [courseAmount, setCourseAmount] = useState(5000);
   const [originalAmount, setOriginalAmount] = useState(5000);
   const [pricingVariant, setPricingVariant] = useState("default");
+  const [razorpayOrderId, setRazorpayOrderId] = useState(null);
 
   
   useEffect(() => {
@@ -38,7 +40,11 @@ function PaymentPage({ onBackToHome } = {}) {
         setCourseAmount(Number(price) || 499);
         setOriginalAmount(Number(original) || 999);
         setPricingVariant(variant || "default");
-  
+
+        clevertap.event.push('payment_page_shown', {
+          pricing_variant: `pricing_${price}`,
+        });
+
       } catch (err) {
         console.error("Remote config error:", err);
         // fallback to default values
@@ -67,6 +73,21 @@ function PaymentPage({ onBackToHome } = {}) {
       alert('Please fill in your name and phone number')
       return
     }
+    clevertap.event.push('Payment Initiated', {
+      amount: courseAmount,
+      pricing_variant: `pricing_${courseAmount}`,
+      phone: formData.phone,
+      name: formData.name,
+    })
+    // Identify user in CleverTap at earliest moment (before any API calls)
+    clevertap.onUserLogin.push({
+      Site: {
+        Name: formData.name,
+        Email: formData.email || undefined,
+        Phone: `+91${formData.phone}`,
+        Identity: formData.phone,
+      },
+    })
     setLoading(true)
     try {
       const scriptLoaded = await loadRazorpayScript()
@@ -94,6 +115,8 @@ function PaymentPage({ onBackToHome } = {}) {
         return
       }
 
+      setRazorpayOrderId(data.orderId)
+
       const options = {
         key:         RAZORPAY_KEY_ID,
         order_id:    data.orderId,
@@ -114,13 +137,14 @@ function PaymentPage({ onBackToHome } = {}) {
             console.error('Payment verification error:', err)
           }
 
-          window.clevertap?.event.push("Payment Success", {
+          clevertap.event.push('Payment Success', {
             amount: courseAmount,
             original_price: originalAmount,
-            pricing_variant: pricingVariant,
-            course_name: "3-Day Hairstyle Masterclass",
+            pricing_variant: `pricing_${courseAmount}`,
+            course_name: '3-Day Hairstyle Masterclass',
             razorpay_order_id: razorpayResponse.razorpay_order_id,
-            phone: formData.phone
+            phone: formData.phone,
+            name: formData.name,
           });
                 
           setPaymentStatus('success')
@@ -130,6 +154,7 @@ function PaymentPage({ onBackToHome } = {}) {
         theme: { color: '#17120e' },
         modal: {
           ondismiss: function () {
+            clevertap.event.push('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, name: formData.name, phone: formData.phone })
             setPaymentStatus('failed')
             setLoading(false)
           },
@@ -148,7 +173,7 @@ function PaymentPage({ onBackToHome } = {}) {
 
   // Step 3 – confirmation
   if (profileData) {
-    return <OrderConfirm paymentData={formData} profileData={profileData} />
+    return <OrderConfirm paymentData={formData} profileData={profileData} courseAmount={courseAmount} />
   }
 
   // Step 2 – profile form
@@ -162,6 +187,8 @@ function PaymentPage({ onBackToHome } = {}) {
         </div>
         <PostPaymentForm
           paymentData={formData}
+          courseAmount={courseAmount}
+          razorpayOrderId={razorpayOrderId}
           onComplete={(profile) => setProfileData({ ...profile, name: formData.name })}
         />
       </div>

@@ -1,8 +1,13 @@
 import React, { useEffect, useRef } from 'react'
 import './OrderConfirm.css'
+import clevertap from '../hooks/clevertap'
 
-export default function OrderConfirm({ paymentData = {}, profileData = {} }) {
+export default function OrderConfirm({ paymentData = {}, profileData = {}, courseAmount }) {
   const canvasRef = useRef(null)
+
+  useEffect(() => {
+    clevertap.event.push('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, name: paymentData.name, phone: paymentData.phone })
+  }, [])
 
   // Confetti animation
   useEffect(() => {
