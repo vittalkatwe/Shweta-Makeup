@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react'
-
 import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 
 const CHECKOUT_URL = '/?payment=1'
@@ -158,49 +157,61 @@ const features = [
 ]
 
 export default function HeroSection() {
-
-
   const [courseAmount, setCourseAmount] = useState(5000);
   const [originalAmount, setOriginalAmount] = useState(5000);
   const [pricingVariant, setPricingVariant] = useState("default");
 
-
   useEffect(() => {
     async function loadConfig() {
       try {
-        // Fetch and activate Firebase Remote Config
         await fetchAndActivate(remoteConfig);
-
-        // Get remote config values
         const price = getValue(remoteConfig, "course_price").asString();
         const original = getValue(remoteConfig, "original_price").asString();
         const variant = getValue(remoteConfig, "pricing_variant").asString();
-
-        // Update state with defaults if values are missing
         setCourseAmount(Number(price) || 499);
         setOriginalAmount(Number(original) || 999);
         setPricingVariant(variant || "default");
-
       } catch (err) {
         console.error("Remote config error:", err);
-        // fallback to default values
         setCourseAmount(499);
         setOriginalAmount(999);
         setPricingVariant("default");
       }
     }
-
     loadConfig();
-  }, []); // run once on mount
+  }, []);
 
   const videoRef = useRef(null)
+  const containerRef = useRef(null)
   const [isMuted, setIsMuted] = useState(true)
 
+  // Autoplay on mount
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
     video.muted = true
     video.play().catch(() => {})
+  }, [])
+
+  // Pause when scrolled out, resume when scrolled back in
+  useEffect(() => {
+    const video = videoRef.current
+    const container = containerRef.current
+    if (!video || !container) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {})
+        } else {
+          video.pause()
+        }
+      },
+      { threshold: 0.25 }
+    )
+
+    observer.observe(container)
+    return () => observer.disconnect()
   }, [])
 
   const toggleMute = () => {
@@ -387,7 +398,7 @@ export default function HeroSection() {
             Stop Losing Time & Clients
           </h1>
 
-          <div className="video-container" onClick={toggleMute}>
+          <div ref={containerRef} className="video-container" onClick={toggleMute}>
             <video
               ref={videoRef}
               src="https://pub-8cb3f523bbe94c609e0173a143b05f75.r2.dev/hero-section%20videos/0325(1).mp4"

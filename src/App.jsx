@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import clevertap from './hooks/clevertap'
 import { remoteConfig, fetchAndActivate, getValue } from './hooks/firebase'
 import AnnouncementBar from './components/AnnouncementBar'
@@ -14,14 +15,11 @@ import Bonuses from './components/Bonuses'
 import FAQ from './components/FAQ'
 import StickyBar from './components/StickyBar'
 import PaymentPage from './pages/PaymentPage.jsx'
+import Refund from './pages/Redund.jsx'
+import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
+import TermsOfUse from './pages/TermsOfUse.jsx'
 
-function getShouldShowPayment() {
-  const params = new URLSearchParams(window.location.search)
-  return params.get('payment') === '1'
-}
-
-export default function App() {
-  const [showPayment, setShowPayment] = useState(() => getShouldShowPayment())
+function HomePage() {
   const [coursePrice, setCoursePrice] = useState('499')
 
   useEffect(() => {
@@ -29,19 +27,14 @@ export default function App() {
       .then(() => {
         const price = getValue(remoteConfig, 'course_price').asString()
         setCoursePrice(price)
-        if (!getShouldShowPayment()) {
-          clevertap.event.push('homepage_shown', {
-            pricing_variant: `pricing_${price}`,
-          })
-        }
+        clevertap.event.push('homepage_shown', {
+          pricing_variant: `pricing_${price}`,
+        })
       })
       .catch(() => {})
   }, [])
 
   useEffect(() => {
-    const onPopState = () => setShowPayment(getShouldShowPayment())
-    window.addEventListener('popstate', onPopState)
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -85,24 +78,12 @@ export default function App() {
     }, 300)
 
     return () => {
-      window.removeEventListener('popstate', onPopState)
       observer.disconnect()
       scrollObserver.disconnect()
       clearTimeout(timer)
       clearTimeout(scrollTimer)
     }
-  }, [showPayment])
-
-  const handleBackToHome = () => {
-    const url = new URL(window.location.href)
-    url.searchParams.delete('payment')
-    window.history.pushState({}, '', url.pathname + url.search + url.hash)
-    setShowPayment(false)
-  }
-
-  if (showPayment) {
-    return <PaymentPage onBackToHome={handleBackToHome} />
-  }
+  }, [])
 
   return (
     <>
@@ -118,4 +99,28 @@ export default function App() {
       <StickyBar />
     </>
   )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/refund" element={<Refund />} />
+        <Route path="/terms" element={<TermsOfUse />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+// Scrolls to top on every route change
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
 }
