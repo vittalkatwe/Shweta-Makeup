@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 
 const CHECKOUT_URL =
-  '/?payment=1'
+  '/payment'
 
 const audience = [
   { title: 'Working Professionals', desc: 'Look fresh and confident every day with quick and easy professional-looking makeup.', img: 'https://cdn.prod.website-files.com/63c91eab7b0fc1e7492b24b0/67004e6c952d7a2965be2d86_Working%20professional%20final.png' },

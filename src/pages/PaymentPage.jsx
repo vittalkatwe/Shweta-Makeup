@@ -239,12 +239,8 @@ function PaymentPage({ onBackToHome } = {}) {
           <p style={{ fontSize: 13, color: '#7a6d64', marginBottom: 28, lineHeight: 1.6, fontWeight: 300 }}>
             Your payment could not be processed. Please try again.
           </p>
-          <button
-            onClick={() => {
-              setPaymentStatus(null)
-              setFormData({ name: '', email: '', phone: '', state: 'Karnataka' })
-              if (typeof onBackToHome === 'function') onBackToHome()
-            }}
+          <a
+            href="/"
             style={{
               width: '100%', padding: '14px 20px',
               background: 'linear-gradient(135deg, #1f1710 0%, #3a2f27 50%, #2a1f16 100%)',
@@ -257,7 +253,7 @@ function PaymentPage({ onBackToHome } = {}) {
             }}
           >
             Try Again
-          </button>
+          </a>
         </div>
       </div>
     )
@@ -275,15 +271,14 @@ function PaymentPage({ onBackToHome } = {}) {
 
   return (
     <div className="pp-page">
-
-      {/* ── Top nav ── */}
+      
       <div className="pp-topbar">
-        <button className="pp-back-btn" onClick={() => typeof onBackToHome === 'function' && onBackToHome()}>
+        <a className="pp-back-btn" href="/">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Back
-        </button>
+        </a>
         <div className="pp-brand-logo">Shweta Celeb<br />Makeover</div>
       </div>
 

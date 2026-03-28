@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 
 const CHECKOUT_URL =
-  '/?payment=1'
+  '/payment'
 
 const bonuses = [
   { badge: 'BONUS 1', title: '📖 Easy to Follow Chapter Notes' },

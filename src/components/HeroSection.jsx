@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 
-const CHECKOUT_URL = '/?payment=1'
+const CHECKOUT_URL = '/payment'
 
 const NOTIFICATIONS = [
   { name: 'Naina', city: 'Jodhpur' },

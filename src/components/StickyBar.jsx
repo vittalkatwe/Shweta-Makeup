@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 
 const CHECKOUT_URL =
-  '/?payment=1'
+  '/payment'
 
 export default function StickyBar() {
 
