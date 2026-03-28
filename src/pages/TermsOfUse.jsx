@@ -3,6 +3,11 @@ import React from 'react'
 const SHARED_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400;500;600;700&display=swap');
 
+
+  body{
+    padding-bottom: 0px;
+  }
+
   .lp-page {
     min-height: 100vh;
     background: #1a1a1a;
@@ -133,7 +138,7 @@ export default function TermsOfUse() {
       <style>{SHARED_STYLES}</style>
       <div className="lp-page">
         <nav className="lp-nav">
-          <a href="/" className="lp-logo">Shweta Celeb Makeover</a>
+          <a href="/" className="lp-logo">Shweta Celeb <br/> Makeover</a>
           <a href="/" className="lp-login-btn">Go Back</a>
         </nav>
 

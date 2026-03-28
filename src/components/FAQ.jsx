@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 
 const faqs = [
-  { q: 'How long is the course and what content does it include?', a: 'The course comprises 16 lessons totaling over 4 hours of content, covering all aspects of makeup from makeup theory to practical techniques.' },
+  { q: 'How long is the course and what content does it include?', a: 'The course comprises 16 lessons totaling over 4 hours of content, covering all aspects of hairstyle from hairstyle theory to practical techniques.' },
   { q: 'Can beginners enroll in this course?', a: 'YES! This course is suitable for beginners as it starts with the basics and gradually progresses to more advanced & practical techniques.' },
-  { q: 'Will I receive a certificate upon completing the course?', a: 'Yes, upon completion of the course, you will receive a certificate acknowledging your new skills and knowledge in makeup.' },
-  { q: 'Is there any support available during the course?', a: 'Yes, you can participate in monthly live Q&A sessions for direct support from Shweta, and you can also engage with peers and experts through the exclusive course community section in the app.' },
-  { q: "In which languages is Shweta Celeb Makeover's Makeup Mastery Course available?", a: "Hinglish — it's just as if we were speaking with you one-on-one. Moreover the use of Hindi is more than the use of English." },
+  { q: 'Will I receive a certificate upon completing the course?', a: 'Yes, upon completion of the course, you will receive a certificate acknowledging your new skills and knowledge in hairstyle.' },
+  { q: 'Is there any support available during the course?', a: 'Yes, you can participate in monthly live Q&A sessions for direct support from Shweta.' },
+  { q: "In which languages is Shweta Celeb Makeover's hairstyle Mastery Course available?", a: "Hinglish — it's just as if we were speaking with you one-on-one. Moreover the use of Hindi is more than the use of English." },
   { q: "I made the payment but didn't receive any confirmation email?", a: 'WhatsApp us on +91 7039240054 — our dedicated support team will get back to you in 24 hours.' },
 ]
 

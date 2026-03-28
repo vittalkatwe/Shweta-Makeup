@@ -331,7 +331,6 @@ function PaymentPage({ onBackToHome } = {}) {
             <div className="pp-service-line">
               <span className="pp-service-name">3-Day Hairstyle Masterclass</span>
               <div className="pp-service-prices">
-                <span className="pp-orig-price">₹{originalAmount}</span>
                 <span className="pp-disc-price">₹{courseAmount.toFixed(2)}</span>
               </div>
             </div>

@@ -57,8 +57,8 @@ const parts = [
 export default function Curriculum() {
 
 
-  const [courseAmount, setCourseAmount] = useState(5000);
-  const [originalAmount, setOriginalAmount] = useState(5000);
+  const [courseAmount, setCourseAmount] = useState(999);
+  const [originalAmount, setOriginalAmount] = useState(999);
   const [pricingVariant, setPricingVariant] = useState("default");
 
 

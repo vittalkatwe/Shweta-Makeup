@@ -16,8 +16,8 @@ const delays = ['delay-1', 'delay-2']
 export default function Bonuses() {
 
 
-  const [courseAmount, setCourseAmount] = useState(5000);
-  const [originalAmount, setOriginalAmount] = useState(5000);
+  const [courseAmount, setCourseAmount] = useState(999);
+  const [originalAmount, setOriginalAmount] = useState(999);
   const [pricingVariant, setPricingVariant] = useState("default");
 
 

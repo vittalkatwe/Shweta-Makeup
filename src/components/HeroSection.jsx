@@ -157,8 +157,8 @@ const features = [
 ]
 
 export default function HeroSection() {
-  const [courseAmount, setCourseAmount] = useState(5000);
-  const [originalAmount, setOriginalAmount] = useState(5000);
+  const [courseAmount, setCourseAmount] = useState(999);
+  const [originalAmount, setOriginalAmount] = useState(999);
   const [pricingVariant, setPricingVariant] = useState("default");
 
   useEffect(() => {
@@ -405,6 +405,7 @@ export default function HeroSection() {
               autoPlay
               muted
               loop
+              poster='https://pub-8cb3f523bbe94c609e0173a143b05f75.r2.dev/certificate-shweta-makeover.jpeg'
               playsInline
               preload="auto"
               className="hero-video"
