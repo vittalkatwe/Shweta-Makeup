@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import clevertap from '../hooks/clevertap'
 
 const CHECKOUT_URL = '/?payment=1'
 
@@ -159,7 +160,7 @@ const features = [
   },
 ]
 
-export default function HeroSection() {
+export default function HeroSection({ coursePrice }) {
   return (
     <>
       <style>{`
@@ -342,9 +343,8 @@ export default function HeroSection() {
             ))}
           </div>
 
-          <a href={CHECKOUT_URL} className="cta-button" style={{ animation: 'fadeSlideUp 1s cubic-bezier(0.16,1,0.3,1) 0.9s both' }}>
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+          <a href={CHECKOUT_URL} className="cta-button" style={{ animation: 'fadeSlideUp 1s cubic-bezier(0.16,1,0.3,1) 0.9s both' }} onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'hero', pricing_variant: `pricing_${coursePrice}` })}>
+            🚀 Join Now for <strong>₹{coursePrice}</strong>
           </a>
         </div>
       </section>

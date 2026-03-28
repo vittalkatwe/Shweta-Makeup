@@ -1,4 +1,5 @@
 import React from 'react'
+import clevertap from '../hooks/clevertap'
 
 const CHECKOUT_URL =
   '/?payment=1'
@@ -14,7 +15,7 @@ const audience = [
 
 const delays = ['delay-1','delay-2','delay-3','delay-4','delay-5','delay-6']
 
-export default function WhoShouldJoin() {
+export default function WhoShouldJoin({ coursePrice }) {
   return (
     <section className="section who-section">
       <div className="section-inner">
@@ -36,8 +37,8 @@ export default function WhoShouldJoin() {
         </div>
 
         <div className="cta-center reveal">
-          <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹499</strong>
+          <a href={CHECKOUT_URL} className="cta-button" onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'who_should_join', pricing_variant: `pricing_${coursePrice}` })}>
+            🚀 Join Now for <strong>₹{coursePrice}</strong>
           </a>
         </div>
       </div>

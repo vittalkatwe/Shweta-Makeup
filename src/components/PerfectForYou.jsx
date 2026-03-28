@@ -1,4 +1,5 @@
 import React from 'react'
+import clevertap from '../hooks/clevertap'
 
 const CHECKOUT_URL =
   '/?payment=1'
@@ -17,7 +18,7 @@ const points = [
   'You want to start earning extra from home',
 ]
 
-export default function PerfectForYou() {
+export default function PerfectForYou({ coursePrice }) {
   return (
     <section className="section perfect-section">
       <div className="section-inner">
@@ -35,9 +36,8 @@ export default function PerfectForYou() {
         </div>
 
         <div className="cta-center reveal">
-          <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+          <a href={CHECKOUT_URL} className="cta-button" onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'perfect_for_you', pricing_variant: `pricing_${coursePrice}` })}>
+            🚀 Join Now for <strong>₹{coursePrice}</strong>
           </a>
         </div>
       </div>

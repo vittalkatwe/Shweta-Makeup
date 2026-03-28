@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import clevertap from '../hooks/clevertap'
 
 const CHECKOUT_URL =
   '/?payment=1'
@@ -12,7 +13,7 @@ const testimonials = [
   { id: 'drkxrywi9d', title: 'TM 6', thumb: 'https://embed-ssl.wistia.com/deliveries/f71aa2fbed7707a1c3ec27ca8f884e7b686e6ac4.jpg?image_crop_resized=720x720' },
 ]
 
-export default function Testimonials() {
+export default function Testimonials({ coursePrice }) {
   const [current, setCurrent] = useState(0)
   const [fading, setFading] = useState(false)
   const timerRef = useRef(null)
@@ -81,9 +82,8 @@ export default function Testimonials() {
         </div>
 
         <div className="cta-center reveal">
-          <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+          <a href={CHECKOUT_URL} className="cta-button" onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'testimonials', pricing_variant: `pricing_${coursePrice}` })}>
+            🚀 Join Now for <strong>₹{coursePrice}</strong>
           </a>
         </div>
       </div>

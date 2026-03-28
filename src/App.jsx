@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import clevertap from './hooks/clevertap'
+import { remoteConfig, fetchAndActivate, getValue } from './hooks/firebase'
 import AnnouncementBar from './components/AnnouncementBar'
 import HeroSection from './components/HeroSection'
 import BrandsSection from './components/BrandsSection'
@@ -20,6 +22,21 @@ function getShouldShowPayment() {
 
 export default function App() {
   const [showPayment, setShowPayment] = useState(() => getShouldShowPayment())
+  const [coursePrice, setCoursePrice] = useState('499')
+
+  useEffect(() => {
+    fetchAndActivate(remoteConfig)
+      .then(() => {
+        const price = getValue(remoteConfig, 'course_price').asString()
+        setCoursePrice(price)
+        if (!getShouldShowPayment()) {
+          clevertap.event.push('homepage_shown', {
+            pricing_variant: `pricing_${price}`,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const onPopState = () => setShowPayment(getShouldShowPayment())
@@ -43,10 +60,36 @@ export default function App() {
     }
     observe()
     const timer = setTimeout(observe, 300)
+
+    const firedSections = new Set()
+    const scrollObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const section = entry.target.getAttribute('data-section')
+          if (entry.isIntersecting && section && !firedSections.has(section)) {
+            firedSections.add(section)
+            clevertap.event.push('homepage_scroll', { section })
+            scrollObserver.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.1 }
+    )
+    document.querySelectorAll('[data-section]').forEach((el) => scrollObserver.observe(el))
+    const scrollTimer = setTimeout(() => {
+      document.querySelectorAll('[data-section]').forEach((el) => {
+        if (!firedSections.has(el.getAttribute('data-section'))) {
+          scrollObserver.observe(el)
+        }
+      })
+    }, 300)
+
     return () => {
       window.removeEventListener('popstate', onPopState)
       observer.disconnect()
+      scrollObserver.disconnect()
       clearTimeout(timer)
+      clearTimeout(scrollTimer)
     }
   }, [])
 
@@ -63,16 +106,16 @@ export default function App() {
 
   return (
     <>
-      <AnnouncementBar />
-      <HeroSection />
-      <PerfectForYou />
-      <Curriculum />
-      <Certificate />
-      <AboutMentor />
-      <Testimonials />
-      <Bonuses />
-      <FAQ />
-      <StickyBar />
+      <div data-section="announcement_bar"><AnnouncementBar coursePrice={coursePrice} /></div>
+      <div data-section="hero"><HeroSection coursePrice={coursePrice} /></div>
+      <div data-section="perfect_for_you"><PerfectForYou coursePrice={coursePrice} /></div>
+      <div data-section="curriculum"><Curriculum coursePrice={coursePrice} /></div>
+      <div data-section="certificate"><Certificate coursePrice={coursePrice} /></div>
+      <div data-section="about_mentor"><AboutMentor /></div>
+      <div data-section="testimonials"><Testimonials coursePrice={coursePrice} /></div>
+      <div data-section="bonuses"><Bonuses coursePrice={coursePrice} /></div>
+      <div data-section="faq"><FAQ /></div>
+      <StickyBar coursePrice={coursePrice} />
     </>
   )
 }

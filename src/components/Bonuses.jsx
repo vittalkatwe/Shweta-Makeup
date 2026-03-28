@@ -1,4 +1,5 @@
 import React from 'react'
+import clevertap from '../hooks/clevertap'
 
 const CHECKOUT_URL =
   '/?payment=1'
@@ -10,7 +11,7 @@ const bonuses = [
 
 const delays = ['delay-1', 'delay-2']
 
-export default function Bonuses() {
+export default function Bonuses({ coursePrice }) {
   return (
     <section className="section bonus-section">
       <div className="section-inner">
@@ -31,9 +32,8 @@ export default function Bonuses() {
         </div>
 
         <div className="cta-center reveal">
-          <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+          <a href={CHECKOUT_URL} className="cta-button" onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'bonuses', pricing_variant: `pricing_${coursePrice}` })}>
+            🚀 Join Now for <strong>₹{coursePrice}</strong>
           </a>
         </div>
       </div>

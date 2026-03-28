@@ -1,9 +1,10 @@
 import React from 'react'
+import clevertap from '../hooks/clevertap'
 
 const CHECKOUT_URL =
   '/?payment=1'
 
-export default function Certificate() {
+export default function Certificate({ coursePrice }) {
   return (
     <section className="section certificate-section">
       <div className="section-inner" style={{ textAlign: 'center' }}>
@@ -21,9 +22,8 @@ export default function Certificate() {
         </div>
 
         <div className="cta-center reveal">
-          <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+          <a href={CHECKOUT_URL} className="cta-button" onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'certificate', pricing_variant: `pricing_${coursePrice}` })}>
+            🚀 Join Now for <strong>₹{coursePrice}</strong>
           </a>
         </div>
       </div>

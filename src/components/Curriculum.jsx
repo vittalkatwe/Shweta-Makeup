@@ -1,4 +1,5 @@
 import React from 'react'
+import clevertap from '../hooks/clevertap'
 
 const CHECKOUT_URL =
   '/?payment=1'
@@ -51,7 +52,7 @@ const parts = [
   },
 ]
 
-export default function Curriculum() {
+export default function Curriculum({ coursePrice }) {
   return (
     <section className="section curriculum-section">
       <div className="section-inner">
@@ -66,8 +67,8 @@ export default function Curriculum() {
             </p>
           </div>
           <div className="reveal-right">
-            <a href={CHECKOUT_URL} className="cta-button" style={{ maxWidth: 260, fontSize: 15, padding: '14px 24px' }}>
-              🚀 Join Now for <strong>₹499</strong>
+            <a href={CHECKOUT_URL} className="cta-button" style={{ maxWidth: 260, fontSize: 15, padding: '14px 24px' }} onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'curriculum', pricing_variant: `pricing_${coursePrice}` })}>
+              🚀 Join Now for <strong>₹{coursePrice}</strong>
             </a>
           </div>
         </div>
@@ -89,9 +90,8 @@ export default function Curriculum() {
         </div>
 
         <div className="cta-center reveal">
-          <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹499</strong>
-            <span className="original">₹999</span>
+          <a href={CHECKOUT_URL} className="cta-button" onClick={() => clevertap.event.push('homepage_cta_clicked', { section: 'curriculum', pricing_variant: `pricing_${coursePrice}` })}>
+            🚀 Join Now for <strong>₹{coursePrice}</strong>
           </a>
         </div>
       </div>
