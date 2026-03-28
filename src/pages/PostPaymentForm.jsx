@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import './PostPaymentForm.css'
+import clevertap from '../hooks/clevertap'
 
 const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -14,7 +15,7 @@ const FIELDS = [
   { name: 'reason',     label: 'Why do you want to learn?', type: 'textarea', placeholder: 'I want to do my own makeup for events…', required: false },
 ]
 
-export default function PostPaymentForm({ paymentData, onComplete }) {
+export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrderId, onComplete }) {
   const [form, setForm]           = useState({ phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]       = useState({})
@@ -35,11 +36,38 @@ export default function PostPaymentForm({ paymentData, onComplete }) {
       await fetch(`${BACKEND_URL}/api/save-profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, ...paymentData }),
+        body: JSON.stringify({
+          name: paymentData.name,
+          email: paymentData.email,
+          phone: paymentData.phone,
+          razorpayOrderId,
+          whatsappPhone: form.phone,
+          gender: form.gender,
+          city: form.city,
+          state: form.state,
+          occupation: form.occupation,
+          reason: form.reason,
+        }),
       })
     } catch (e) {
       console.error('Profile save error:', e)
     } finally {
+      clevertap.profile.push({
+        Site: {
+          Gender: form.gender === 'Female' ? 'F' : form.gender === 'Male' ? 'M' : undefined,
+          City: form.city,
+          State: form.state,
+        },
+      })
+      clevertap.event.push('Profile Completed', {
+        gender: form.gender,
+        city: form.city,
+        state: form.state,
+        occupation: form.occupation,
+        pricing_variant: `pricing_${courseAmount}`,
+        name: paymentData.name,
+        phone: paymentData.phone,
+      })
       setSubmitting(false)
       onComplete(form)
     }
