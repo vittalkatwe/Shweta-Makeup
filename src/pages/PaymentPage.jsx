@@ -138,6 +138,7 @@ function PaymentPage({ onBackToHome } = {}) {
         name:        'Shweta Celeb Makeover',
         description: `Core Of Makeup — ₹${courseAmount}`,
         handler: async function (razorpayResponse) {
+          const eventId = `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
           try {
             await fetch(`${BACKEND_URL}/api/verify-payment`, {
               method:  'POST',
@@ -146,6 +147,7 @@ function PaymentPage({ onBackToHome } = {}) {
                 razorpay_order_id:   razorpayResponse.razorpay_order_id,
                 razorpay_payment_id: razorpayResponse.razorpay_payment_id,
                 razorpay_signature:  razorpayResponse.razorpay_signature,
+                event_id:            eventId,
               }),
             })
           } catch (err) {
@@ -170,7 +172,7 @@ function PaymentPage({ onBackToHome } = {}) {
             order_id: razorpayResponse.razorpay_order_id,
             phone: formData.phone,
             name: formData.name,
-          });
+          }, { eventID: eventId });
                 
           setPaymentStatus('success')
           setShowProfileForm(true)

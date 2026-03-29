@@ -6,6 +6,47 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+// ── Meta CAPI helpers ──────────────────────────────────────
+function sha256(value) {
+  return crypto.createHash('sha256').update(value.trim().toLowerCase()).digest('hex');
+}
+
+async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sourceUrl, clientIp, userAgent }) {
+  const pixelId = '1627603605217493';
+  const accessToken = 'EAASQRFhMkIoBRH5qOFxLERc4EIuDQdWUwuh8rGk4x2sNdqUIZAKlOZA3ZBcEf5Dqp27396dhNqNM1seFvftjWZAgFsCKUjlZBCu1ZBaM3w8LOnfwY4ZCYkg4ZAwbEWIqnFXUjVjkyNkyK6x5gT3Vn6vvEj7ZBYAJtYi5GsqxrqTdwxBJPypNwrre2QAOeXVMEZCrEVpgZDZD';
+
+  const payload = {
+    data: [{
+      event_name: eventName,
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: eventId,
+      event_source_url: sourceUrl || 'https://shwetaceleb.com',
+      action_source: 'website',
+      user_data: {
+        ph: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
+        em: userData.email ? sha256(userData.email) : undefined,
+        fn: userData.name ? sha256(userData.name.split(' ')[0]) : undefined,
+        client_ip_address: clientIp,
+        client_user_agent: userAgent,
+      },
+      custom_data: customData,
+    }],
+  };
+
+  const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    console.log('Meta CAPI response:', json);
+  } catch (err) {
+    console.error('Meta CAPI error:', err);
+  }
+}
+
 const app = express();
 
 app.use(cors());
@@ -262,7 +303,7 @@ app.post('/api/save-profile', async (req, res) => {
 // ============================================================
 app.post('/api/verify-payment', async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, event_id } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ success: false, message: 'Missing payment details' });
@@ -312,6 +353,16 @@ app.post('/api/verify-payment', async (req, res) => {
     if (!updatedPayment.emailSent) {
       await sendConfirmationEmail(updatedPayment);
     }
+
+    await sendMetaCAPIEvent({
+      eventName: 'Purchase',
+      eventId: event_id,
+      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name },
+      customData: { value: updatedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
+      sourceUrl: req.headers.referer,
+      clientIp: req.ip || req.headers['x-forwarded-for'],
+      userAgent: req.headers['user-agent'],
+    });
 
     return res.json({ success: true });
   } catch (error) {
