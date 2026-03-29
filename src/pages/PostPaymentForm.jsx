@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import './PostPaymentForm.css'
 import clevertap from '../hooks/clevertap'
+import { trackCustomEvent } from '../hooks/meta'
 
 const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -60,6 +61,15 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         },
       })
       clevertap.event.push('Profile Completed', {
+        gender: form.gender,
+        city: form.city,
+        state: form.state,
+        occupation: form.occupation,
+        pricing_variant: `pricing_${courseAmount}`,
+        name: paymentData.name,
+        phone: paymentData.phone,
+      })
+      trackCustomEvent('Profile Completed', {
         gender: form.gender,
         city: form.city,
         state: form.state,
