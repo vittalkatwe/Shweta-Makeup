@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import clevertap from './hooks/clevertap'
+import { trackEvent, trackCustomEvent } from './hooks/meta'
 import { remoteConfig, fetchAndActivate, getValue } from './hooks/firebase'
 import AnnouncementBar from './components/AnnouncementBar'
 import HeroSection from './components/HeroSection'
@@ -33,6 +34,7 @@ export default function App() {
           clevertap.event.push('homepage_shown', {
             pricing_variant: `pricing_${price}`,
           })
+          trackEvent('PageView', { pricing_variant: `pricing_${price}` })
         }
       })
       .catch(() => {})
@@ -69,6 +71,7 @@ export default function App() {
           if (entry.isIntersecting && section && !firedSections.has(section)) {
             firedSections.add(section)
             clevertap.event.push('homepage_scroll', { section })
+            trackCustomEvent('homepage_scroll', { section })
             scrollObserver.unobserve(entry.target)
           }
         })

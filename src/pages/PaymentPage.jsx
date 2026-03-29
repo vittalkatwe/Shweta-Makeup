@@ -5,6 +5,7 @@ import PostPaymentForm from './PostPaymentForm'
 import OrderConfirm from './OrderConfirm'
 import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
 import clevertap from '../hooks/clevertap';
+import { trackEvent, trackCustomEvent } from '../hooks/meta'
 
 const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
@@ -44,6 +45,12 @@ function PaymentPage({ onBackToHome } = {}) {
         clevertap.event.push('payment_page_shown', {
           pricing_variant: `pricing_${price}`,
         });
+        trackEvent('ViewContent', {
+          content_name: '3-Day Hairstyle Masterclass',
+          value: Number(price) || 499,
+          currency: 'INR',
+          pricing_variant: `pricing_${price}`,
+        });
 
       } catch (err) {
         console.error("Remote config error:", err);
@@ -75,6 +82,14 @@ function PaymentPage({ onBackToHome } = {}) {
     }
     clevertap.event.push('Payment Initiated', {
       amount: courseAmount,
+      pricing_variant: `pricing_${courseAmount}`,
+      phone: formData.phone,
+      name: formData.name,
+    })
+    trackEvent('InitiateCheckout', {
+      value: courseAmount,
+      currency: 'INR',
+      num_items: 1,
       pricing_variant: `pricing_${courseAmount}`,
       phone: formData.phone,
       name: formData.name,
@@ -146,6 +161,16 @@ function PaymentPage({ onBackToHome } = {}) {
             phone: formData.phone,
             name: formData.name,
           });
+          trackEvent('Purchase', {
+            value: courseAmount,
+            currency: 'INR',
+            content_name: '3-Day Hairstyle Masterclass',
+            original_price: originalAmount,
+            pricing_variant: `pricing_${courseAmount}`,
+            order_id: razorpayResponse.razorpay_order_id,
+            phone: formData.phone,
+            name: formData.name,
+          });
                 
           setPaymentStatus('success')
           setShowProfileForm(true)
@@ -155,6 +180,12 @@ function PaymentPage({ onBackToHome } = {}) {
         modal: {
           ondismiss: function () {
             clevertap.event.push('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, name: formData.name, phone: formData.phone })
+            trackCustomEvent('Payment Dismissed', {
+              value: courseAmount,
+              pricing_variant: `pricing_${courseAmount}`,
+              name: formData.name,
+              phone: formData.phone,
+            })
             setPaymentStatus('failed')
             setLoading(false)
           },
