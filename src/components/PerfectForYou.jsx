@@ -55,7 +55,7 @@ export default function PerfectForYou() {
   }, []); // run once on mount
 
   return (
-    <section className="section perfect-section">
+    <section className="section perfect-section" data-section="perfect-for-you">
       <div className="section-inner">
         <div className="reveal">
           <h2 className="section-title">This Masterclass is Perfect for You if</h2>

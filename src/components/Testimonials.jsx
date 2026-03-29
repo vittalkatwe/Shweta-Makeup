@@ -225,7 +225,7 @@ export default function Testimonials() {
         }
       `}</style>
 
-      <section className="section testimonials-section">
+      <section className="section testimonials-section" data-section="testimonials">
         <div className="section-inner">
           <div className="reveal">
             <h2 className="section-title">Student Feedback</h2>

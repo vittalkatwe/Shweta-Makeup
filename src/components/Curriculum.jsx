@@ -91,7 +91,7 @@ export default function Curriculum() {
   }, []); // run once on mount
 
   return (
-    <section className="section curriculum-section">
+    <section className="section curriculum-section" data-section="curriculum">
       <div className="section-inner">
         <div className="curriculum-header">
           <div className="curriculum-intro reveal-left">

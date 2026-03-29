@@ -29,7 +29,7 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(null)
 
   return (
-    <section className="section faq-section">
+    <section className="section faq-section" data-section="faq">
       <div className="section-inner">
         <div className="reveal">
           <h2 className="section-title">FAQ</h2>

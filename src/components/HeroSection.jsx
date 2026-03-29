@@ -387,7 +387,7 @@ export default function HeroSection() {
         }
       `}</style>
 
-      <section className="hero-section">
+      <section className="hero-section" data-section="hero">
         <div className="hero-inner">
 
           <SocialProofTicker />
