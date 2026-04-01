@@ -42,7 +42,7 @@ export default function Certificate() {
   }, []); // run once on mount
 
   return (
-    <section className="section certificate-section">
+    <section className="section certificate-section" data-section="certificate">
       <div className="section-inner" style={{ textAlign: 'center' }}>
         <div className="reveal">
           <h2 className="section-title">Get Certified!</h2>

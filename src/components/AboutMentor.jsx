@@ -36,7 +36,7 @@ function CountUp({ target, suffix = '' }) {
 
 export default function AboutMentor() {
   return (
-    <section className="section about-section">
+    <section className="section about-section" data-section="about-mentor">
       <div className="about-inner">
         <div className="about-text reveal-left">
           <div className="about-eyebrow">✦ Your Mentor</div>

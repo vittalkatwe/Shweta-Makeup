@@ -50,7 +50,7 @@ export default function Bonuses() {
   }, []); // run once on mount
 
   return (
-    <section className="section bonus-section">
+    <section className="section bonus-section" data-section="bonuses">
       <div className="section-inner">
         <div className="reveal">
           <h2 className="section-title">🎁 ₹10,000 Worth of Exclusive Bonuses with this Course</h2>

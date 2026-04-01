@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import clevertap from './hooks/clevertap'
 import { trackEvent, trackCustomEvent } from './hooks/meta'
@@ -22,6 +22,8 @@ import TermsOfUse from './pages/TermsOfUse.jsx'
 
 function HomePage() {
   const [coursePrice, setCoursePrice] = useState('499')
+  const eventFiredRef = useRef(false)
+  const firedSectionsRef = useRef(new Set())
 
   useEffect(() => {
     fetchAndActivate(remoteConfig)
@@ -29,7 +31,8 @@ function HomePage() {
         const price = getValue(remoteConfig, 'course_price').asString()
         setCoursePrice(price)
 
-        if (!getShouldShowPayment()) {
+        if (!eventFiredRef.current) {
+          eventFiredRef.current = true
           clevertap.event.push('homepage_shown', {
             pricing_variant: `pricing_${price}`,
           })
@@ -59,7 +62,7 @@ function HomePage() {
     observe()
     const timer = setTimeout(observe, 300)
 
-    const firedSections = new Set()
+    const firedSections = firedSectionsRef.current
     const scrollObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
