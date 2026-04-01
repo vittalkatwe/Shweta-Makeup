@@ -384,6 +384,7 @@ function PaymentPage({ onBackToHome } = {}) {
           className={`pp-proceed-btn${loading || !canPay ? ' is-disabled' : ''}`}
           onClick={handlePayment}
           disabled={loading || !canPay}
+          data-clarity-unmask="True"
         >
           {loading
             ? <><Loader size={17} className="pp-spin" /> Processing…</>
