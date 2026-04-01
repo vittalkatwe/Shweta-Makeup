@@ -324,20 +324,20 @@ function PaymentPage({ onBackToHome } = {}) {
         <div className="pp-card">
 
           <div className="pp-field-divider" />
-          <div className="pp-input-row">
+          <div className="pp-input-row" data-clarity-unmask="True">
             <input className="pp-bare-input" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Full name" data-clarity-unmask="True" />
           </div>
 
        
 
           <div className="pp-field-divider" />
-          <div className="pp-input-row">
+          <div className="pp-input-row" data-clarity-unmask="True">
             <div className="pp-phone-flag-block">
               <span style={{ fontSize: 18, lineHeight: 1 }}>🇮🇳</span>
-              <span className="pp-phone-code">+91</span>
-              <span className="pp-phone-chevron">▾</span>
+              <span className="pp-phone-code" data-clarity-unmask="True">+91</span>
+              <span className="pp-phone-chevron" data-clarity-unmask="True">▾</span>
             </div>
-            <div className="pp-phone-divider" />
+            <div className="pp-phone-divider" data-clarity-unmask="True"/>
             <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" data-clarity-unmask="True" />
           </div>        </div>
 
