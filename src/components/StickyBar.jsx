@@ -41,15 +41,15 @@ export default function StickyBar() {
   }, []); // run once on mount
 
   return (
-    <div className="sticky-bar">
+    <div className="sticky-bar" data-clarity-unmask="True">
       <div>
         <div className="sticky-price">
-          ₹{courseAmount}/-
+          <strong data-clarity-unmask="True">₹{courseAmount}/-</strong>
         </div>
         <div className="sticky-offer-text">🌟 Limited-Time Offer</div>
       </div>
-      <a href={CHECKOUT_URL} className="sticky-cta">
-        🚀 Join Now
+      <a href={CHECKOUT_URL} className="sticky-cta" data-clarity-unmask="True">
+        🚀 Join Now <strong data-clarity-unmask="True">₹{courseAmount}</strong>
       </a>
     </div>
   )

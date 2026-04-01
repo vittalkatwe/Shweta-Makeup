@@ -40,9 +40,9 @@ export default function AnnouncementBar() {
   }, []); // run once on mount
 
   return (
-    <div className="announcement-bar">
+    <div className="announcement-bar" data-clarity-unmask="True">
       ⚡ Limited Time Offer:{' '}
-      <strong>Enroll at Rs. ₹{courseAmount}</strong>{' '}
+      <strong data-clarity-unmask="True">Enroll at Rs. ₹{courseAmount}</strong>{' '}
     </div>
   )
 }

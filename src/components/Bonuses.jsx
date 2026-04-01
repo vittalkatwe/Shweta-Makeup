@@ -68,9 +68,9 @@ export default function Bonuses() {
           ))}
         </div>
 
-        <div className="cta-center reveal">
-          <a href={CHECKOUT_URL} className="cta-button">
-            🚀 Join Now for <strong>₹{courseAmount}</strong>
+        <div className="cta-center reveal" data-clarity-unmask="True">
+          <a href={CHECKOUT_URL} className="cta-button" data-clarity-unmask="True">
+            🚀 Join Now for <strong data-clarity-unmask="True">₹{courseAmount}</strong>
           </a>
         </div>
       </div>

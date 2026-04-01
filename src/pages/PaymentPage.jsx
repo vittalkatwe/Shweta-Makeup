@@ -325,7 +325,7 @@ function PaymentPage({ onBackToHome } = {}) {
 
           <div className="pp-field-divider" />
           <div className="pp-input-row">
-            <input className="pp-bare-input" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Full name" />
+            <input className="pp-bare-input" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Full name" data-clarity-unmask="True" />
           </div>
 
        
@@ -338,7 +338,7 @@ function PaymentPage({ onBackToHome } = {}) {
               <span className="pp-phone-chevron">▾</span>
             </div>
             <div className="pp-phone-divider" />
-            <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" />
+            <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" data-clarity-unmask="True" />
           </div>        </div>
 
         {/* Coupon card */}
@@ -364,14 +364,14 @@ function PaymentPage({ onBackToHome } = {}) {
             <div className="pp-service-line">
               <span className="pp-service-name">3-Day Hairstyle Masterclass</span>
               <div className="pp-service-prices">
-                <span className="pp-disc-price">₹{courseAmount.toFixed(2)}</span>
+                <span className="pp-disc-price" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
           <div className="pp-amount-divider" />
           <div className="pp-total-line">
             <span className="pp-total-label">Amount to be paid</span>
-            <span className="pp-total-value">₹{courseAmount}.00</span>
+            <span className="pp-total-value" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
           </div>
         </div>
 
@@ -387,7 +387,7 @@ function PaymentPage({ onBackToHome } = {}) {
         >
           {loading
             ? <><Loader size={17} className="pp-spin" /> Processing…</>
-            : <>Proceed to pay ₹{courseAmount}.00</>
+            : <>Proceed to pay <strong data-clarity-unmask="True">₹{courseAmount}.00</strong></>
           }
         </button>
         <div className="pp-pay-methods">
