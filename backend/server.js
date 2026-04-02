@@ -50,7 +50,9 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; }
+}));
 
 const path = require('path');
 const fs = require('fs');
@@ -376,7 +378,7 @@ app.post('/api/verify-payment', async (req, res) => {
 // ============================================================
 app.post('/api/webhook', async (req, res) => {
   try {
-    const webhookBody      = JSON.stringify(req.body);
+    const webhookBody      = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
     const webhookSignature = req.headers['x-razorpay-signature'];
 
     const expectedSignature = crypto

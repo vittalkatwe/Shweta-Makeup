@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Loader, XCircle } from 'lucide-react';
 import './PaymentPage.css'
 import PostPaymentForm from './PostPaymentForm'
@@ -24,33 +24,37 @@ function PaymentPage({ onBackToHome } = {}) {
   const [originalAmount, setOriginalAmount] = useState(5000);
   const [pricingVariant, setPricingVariant] = useState("default");
   const [razorpayOrderId, setRazorpayOrderId] = useState(null);
+  const eventFiredRef = useRef(false);
 
-  
+
   useEffect(() => {
     async function loadConfig() {
       try {
         // Fetch and activate Firebase Remote Config
         await fetchAndActivate(remoteConfig);
-  
+
         // Get remote config values
         const price = getValue(remoteConfig, "course_price").asString();
         const original = getValue(remoteConfig, "original_price").asString();
         const variant = getValue(remoteConfig, "pricing_variant").asString();
-  
+
         // Update state with defaults if values are missing
         setCourseAmount(Number(price) || 499);
         setOriginalAmount(Number(original) || 999);
         setPricingVariant(variant || "default");
 
-        clevertap.event.push('payment_page_shown', {
-          pricing_variant: `pricing_${price}`,
-        });
-        trackEvent('ViewContent', {
-          content_name: '3-Day Hairstyle Masterclass',
-          value: Number(price) || 499,
-          currency: 'INR',
-          pricing_variant: `pricing_${price}`,
-        });
+        if (!eventFiredRef.current) {
+          eventFiredRef.current = true;
+          clevertap.event.push('payment_page_shown', {
+            pricing_variant: `pricing_${price}`,
+          });
+          trackEvent('ViewContent', {
+            content_name: '3-Day Hairstyle Masterclass',
+            value: Number(price) || 499,
+            currency: 'INR',
+            pricing_variant: `pricing_${price}`,
+          });
+        }
 
       } catch (err) {
         console.error("Remote config error:", err);
