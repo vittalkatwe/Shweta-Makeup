@@ -328,21 +328,21 @@ function PaymentPage({ onBackToHome } = {}) {
         <div className="pp-card">
 
           <div className="pp-field-divider" />
-          <div className="pp-input-row">
-            <input className="pp-bare-input" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Full name" />
+          <div className="pp-input-row" data-clarity-unmask="True">
+            <input className="pp-bare-input" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Full name" data-clarity-unmask="True" />
           </div>
 
        
 
           <div className="pp-field-divider" />
-          <div className="pp-input-row">
+          <div className="pp-input-row" data-clarity-unmask="True">
             <div className="pp-phone-flag-block">
               <span style={{ fontSize: 18, lineHeight: 1 }}>🇮🇳</span>
-              <span className="pp-phone-code">+91</span>
-              <span className="pp-phone-chevron">▾</span>
+              <span className="pp-phone-code" data-clarity-unmask="True">+91</span>
+              <span className="pp-phone-chevron" data-clarity-unmask="True">▾</span>
             </div>
-            <div className="pp-phone-divider" />
-            <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" />
+            <div className="pp-phone-divider" data-clarity-unmask="True"/>
+            <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" data-clarity-unmask="True" />
           </div>        </div>
 
         {/* Coupon card */}
@@ -368,14 +368,14 @@ function PaymentPage({ onBackToHome } = {}) {
             <div className="pp-service-line">
               <span className="pp-service-name">3-Day Hairstyle Masterclass</span>
               <div className="pp-service-prices">
-                <span className="pp-disc-price">₹{courseAmount.toFixed(2)}</span>
+                <span className="pp-disc-price" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
           <div className="pp-amount-divider" />
           <div className="pp-total-line">
             <span className="pp-total-label">Amount to be paid</span>
-            <span className="pp-total-value">₹{courseAmount}.00</span>
+            <span className="pp-total-value" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
           </div>
         </div>
 
@@ -388,10 +388,11 @@ function PaymentPage({ onBackToHome } = {}) {
           className={`pp-proceed-btn${loading || !canPay ? ' is-disabled' : ''}`}
           onClick={handlePayment}
           disabled={loading || !canPay}
+          data-clarity-unmask="True"
         >
           {loading
             ? <><Loader size={17} className="pp-spin" /> Processing…</>
-            : <>Proceed to pay ₹{courseAmount}.00</>
+            : <>Proceed to pay <strong data-clarity-unmask="True">₹{courseAmount}.00</strong></>
           }
         </button>
         <div className="pp-pay-methods">
