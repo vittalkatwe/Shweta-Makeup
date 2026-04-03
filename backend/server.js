@@ -439,6 +439,45 @@ app.post('/api/webhook', async (req, res) => {
         break;
       }
 
+      case 'order.paid': {
+        const orderEntity = payload.order?.entity || payload.order;
+        if (!orderEntity) break;
+    
+        const orderId = orderEntity.id;
+    
+        // Only act if not already marked paid (idempotency guard)
+        const existingPayment = await Payment.findOne({ razorpayOrderId: orderId });
+        if (!existingPayment || existingPayment.status === 'paid') break;
+    
+        const paidPayment = await Payment.findOneAndUpdate(
+          { razorpayOrderId: orderId, status: { $ne: 'paid' } },
+          { status: 'paid' },
+          { new: true }
+        );
+    
+        if (paidPayment) {
+          await Profile.findOneAndUpdate(
+            { razorpayOrderId: orderId },
+            {
+              $set: {
+                hasPurchasedCourse: true,
+                coursePurchasePrice: paidPayment.amount,
+                courseName: '3-Day Hairstyle Masterclass',
+              },
+            }
+          );
+    
+          if (!paidPayment.emailSent) {
+            await sendConfirmationEmail(paidPayment);
+          }
+    
+          console.log('✅ order.paid handled for:', orderId);
+        }
+    
+        break;
+      }
+    
+
       case 'payment.failed': {
         const paymentEntity = payload.payment?.entity || payload.payment;
         if (!paymentEntity) break;
