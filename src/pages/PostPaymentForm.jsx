@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import './PostPaymentForm.css'
 import clevertap from '../hooks/clevertap'
 import { trackCustomEvent } from '../hooks/meta'
@@ -6,6 +6,7 @@ import { trackCustomEvent } from '../hooks/meta'
 const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const FIELDS = [
+  { name: 'name',  label: 'Full Name', type: 'text', placeholder: 'Your name', required: true },
   { name: 'phone',      label: 'WhatsApp Number',        type: 'tel',      placeholder: '98XXXXXXXX', required: true, prefix: '+91' },
   { name: 'gender',     label: 'Gender',                 type: 'select',   required: true,
     options: ['Female', 'Male', 'Non-binary', 'Prefer not to say'] },
@@ -17,9 +18,10 @@ const FIELDS = [
 ]
 
 export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrderId, onComplete }) {
-  const [form, setForm]           = useState({ phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
+  const [form, setForm]           = useState({ name: '', phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]       = useState({})
+  const fieldRefs = useRef({}) 
 
   const validate = () => {
     const errs = {}
@@ -27,6 +29,13 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
       if (f.required && !form[f.name]?.trim()) errs[f.name] = 'This field is required'
     })
     setErrors(errs)
+
+
+    const firstError = FIELDS.find(f => errs[f.name])
+    if (firstError && fieldRefs.current[firstError.name]) {
+      fieldRefs.current[firstError.name].scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+
     return Object.keys(errs).length === 0
   }
 
@@ -37,8 +46,8 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
       await fetch(`${BACKEND_URL}/api/save-profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: paymentData.name,
+        body: JSON.stringify({ 
+          name: form.name,
           email: paymentData.email,
           phone: paymentData.phone,
           razorpayOrderId,
@@ -66,7 +75,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         state: form.state,
         occupation: form.occupation,
         pricing_variant: `pricing_${courseAmount}`,
-        name: paymentData.name,
+        name: form.name,
         phone: paymentData.phone,
       })
       trackCustomEvent('Profile Completed', {
@@ -75,7 +84,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         state: form.state,
         occupation: form.occupation,
         pricing_variant: `pricing_${courseAmount}`,
-        name: paymentData.name,
+        name: form.name,
         phone: paymentData.phone,
       })
       setSubmitting(false)
@@ -101,7 +110,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
 
         <div className="ppf-body">
           {FIELDS.map(field => (
-            <div className="ppf-field" key={field.name}>
+            <div className="ppf-field" key={field.name} ref={el => fieldRefs.current[field.name] = el}>
               <label className="ppf-label">
                 {field.label}
                 {field.required && <span className="ppf-required">*</span>}
