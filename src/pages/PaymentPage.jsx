@@ -142,7 +142,7 @@ function PaymentPage({ onBackToHome } = {}) {
         name:        'Shweta Celeb Makeover',
         description: `Core Of Makeup — ₹${courseAmount}`,
         handler: async function (razorpayResponse) {
-          const eventId = `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          const eventId = `purchase_${razorpayResponse.razorpay_order_id}`;
           try {
             await fetch(`${BACKEND_URL}/api/verify-payment`, {
               method:  'POST',

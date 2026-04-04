@@ -20,7 +20,7 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
       event_name: eventName,
       event_time: Math.floor(Date.now() / 1000),
       event_id: eventId,
-      event_source_url: sourceUrl || 'https://shwetaceleb.com',
+      event_source_url: sourceUrl || 'https://shwetamakeover.online',
       action_source: 'website',
       user_data: {
         ph: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
@@ -409,6 +409,10 @@ app.post('/api/webhook', async (req, res) => {
           ? paymentEntity.amount / 100
           : null;
 
+        const existingPayment = await Payment.findOne({ razorpayOrderId: orderId });
+        if (!existingPayment || existingPayment.status === 'paid') break; // ← add this
+
+
         const capturedPayment = await Payment.findOneAndUpdate(
           { razorpayOrderId: orderId },
           {
@@ -434,6 +438,16 @@ app.post('/api/webhook', async (req, res) => {
           if (!capturedPayment.emailSent) {
             await sendConfirmationEmail(capturedPayment);
           }
+          
+          await sendMetaCAPIEvent({
+            eventName: 'Purchase',
+            eventId: `purchase_${orderId}`,
+            userData: { phone: capturedPayment.phone, email: capturedPayment.email, name: capturedPayment.name },
+            customData: { value: capturedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
+            sourceUrl: 'https://shwetamakeover.online',
+            clientIp: req.ip || req.headers['x-forwarded-for'],
+            userAgent: req.headers['user-agent'],
+          });
         }
 
         break;
@@ -470,6 +484,16 @@ app.post('/api/webhook', async (req, res) => {
           if (!paidPayment.emailSent) {
             await sendConfirmationEmail(paidPayment);
           }
+
+          await sendMetaCAPIEvent({
+            eventName: 'Purchase',
+            eventId: `purchase_${orderId}`,
+            userData: { phone: paidPayment.phone, email: paidPayment.email, name: paidPayment.name },
+            customData: { value: paidPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
+            sourceUrl: 'https://shwetamakeover.online',
+            clientIp: req.ip || req.headers['x-forwarded-for'],
+            userAgent: req.headers['user-agent'],
+          });
     
           console.log('✅ order.paid handled for:', orderId);
         }
