@@ -120,10 +120,6 @@ export default function OrderConfirm({ paymentData = {}, profileData = {}, cours
               <div>You'll receive class details on your WhatsApp number</div>
             </div>
             <div className="oc-next-step">
-              <div className="oc-next-num">2</div>
-              <div>Join the exclusive community group for updates</div>
-            </div>
-            <div className="oc-next-step">
               <div className="oc-next-num">3</div>
               <div>Show up on April 8th at 12 PM — ready to learn!</div>
             </div>
