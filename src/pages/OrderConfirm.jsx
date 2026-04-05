@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import './OrderConfirm.css'
 import clevertap from '../hooks/clevertap'
 import { trackCustomEvent } from '../hooks/meta'
+import { trackEvent as clarityTrackEvent } from '../hooks/clarity'
 import { usePrice } from '../hooks/usePrice'
 
 export default function OrderConfirm({ paymentData = {}, profileData = {}, courseAmount }) {
@@ -10,6 +11,7 @@ export default function OrderConfirm({ paymentData = {}, profileData = {}, cours
 
   useEffect(() => {
     clevertap.event.push('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone })
+    clarityTrackEvent('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone })
     trackCustomEvent('Order Confirmed', {
       course_name: '3-Day Hairstyle Masterclass',
       pricing_variant: `pricing_${courseAmount}`,

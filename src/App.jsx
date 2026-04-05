@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import { Loader } from 'lucide-react'
 import clevertap from './hooks/clevertap'
 import { trackEvent, trackCustomEvent } from './hooks/meta'
+import { trackEvent as clarityTrackEvent } from './hooks/clarity'
 import { PriceProvider, usePrice } from './hooks/usePrice'
 import AnnouncementBar from './components/AnnouncementBar'
 import HeroSection from './components/HeroSection'
@@ -30,6 +31,10 @@ function HomePage() {
     if (eventFiredRef.current) return
     eventFiredRef.current = true
     clevertap.event.push('homepage_shown', {
+      pricing_variant: `pricing_${coursePrice}`,
+      urgency_variant: urgencyVariant,
+    })
+    clarityTrackEvent('homepage_shown', {
       pricing_variant: `pricing_${coursePrice}`,
       urgency_variant: urgencyVariant,
     })
@@ -64,6 +69,7 @@ function HomePage() {
           if (entry.isIntersecting && section && !firedSections.has(section)) {
             firedSections.add(section)
             clevertap.event.push('homepage_scroll', { section, urgency_variant: urgencyVariant })
+            clarityTrackEvent('homepage_scroll', { section, urgency_variant: urgencyVariant })
             trackCustomEvent('homepage_scroll', { section })
             scrollObserver.unobserve(entry.target)
           }
