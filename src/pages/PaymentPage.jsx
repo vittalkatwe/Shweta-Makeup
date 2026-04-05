@@ -51,7 +51,7 @@ function PaymentPage({ onBackToHome } = {}) {
     })
 
   const handlePayment = async () => {
-    if (!formData.name || !formData.phone) {
+    if (!formData.phone) {
       alert('Please fill in your name and phone number')
       return
     }
@@ -114,7 +114,7 @@ function PaymentPage({ onBackToHome } = {}) {
         name:        'Shweta Celeb Makeover',
         description: `Core Of Makeup — ₹${courseAmount}`,
         handler: async function (razorpayResponse) {
-          const eventId = `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          const eventId = `purchase_${razorpayResponse.razorpay_order_id}`;
           try {
             await fetch(`${BACKEND_URL}/api/verify-payment`, {
               method:  'POST',
@@ -199,7 +199,7 @@ function PaymentPage({ onBackToHome } = {}) {
           paymentData={formData}
           courseAmount={courseAmount}
           razorpayOrderId={razorpayOrderId}
-          onComplete={(profile) => setProfileData({ ...profile, name: formData.name })}
+          onComplete={(profile) => setProfileData(profile)}
         />
       </div>
     )
@@ -269,7 +269,7 @@ function PaymentPage({ onBackToHome } = {}) {
     )
   }
 
-  const canPay = Boolean(formData.name && formData.phone)
+  const canPay = Boolean(formData.phone)
 
   const INDIAN_STATES = [
     'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
@@ -301,9 +301,6 @@ function PaymentPage({ onBackToHome } = {}) {
         <div className="pp-card">
 
           <div className="pp-field-divider" />
-          <div className="pp-input-row" data-clarity-unmask="True">
-            <input className="pp-bare-input" type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Full name" data-clarity-unmask="True" />
-          </div>
 
        
 
@@ -376,14 +373,6 @@ function PaymentPage({ onBackToHome } = {}) {
             : <>Proceed to pay <strong data-clarity-unmask="True">₹{courseAmount}.00</strong></>
           }
         </button>
-        <div className="pp-pay-methods">
-          <span className="pp-method pp-method-upi">UPI</span>
-          <span className="pp-method pp-method-paytm">Paytm</span>
-          <span className="pp-method pp-method-visa">VISA</span>
-          <span className="pp-method pp-method-mastercard">Master</span>
-          <span className="pp-method pp-method-rupay">RuPay</span>
-          <span className="pp-method pp-method-gpay">GPay</span>
-        </div>
       </div>
     </div>
   )

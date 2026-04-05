@@ -20,12 +20,12 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
       event_name: eventName,
       event_time: Math.floor(Date.now() / 1000),
       event_id: eventId,
-      event_source_url: sourceUrl || 'https://shwetaceleb.com',
+      event_source_url: sourceUrl || 'https://shwetamakeover.online',
       action_source: 'website',
       user_data: {
         ph: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
         em: userData.email ? sha256(userData.email) : undefined,
-        fn: userData.name ? sha256(userData.name.split(' ')[0]) : undefined,
+        fn: userData.name ? sha256(userData.name.split(' ')[0]) : null,
         client_ip_address: clientIp,
         client_user_agent: userAgent,
       },
@@ -64,7 +64,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // ── Payment Schema ────────────────────────────────────────
 const paymentSchema = new mongoose.Schema({
-  name:     { type: String, required: true },
+  name:     { type: String, default: null },
   email:    { type: String, default: null },   // optional
   phone:    { type: String, required: true },
   amount:   { type: Number, required: true },
@@ -91,7 +91,7 @@ const Payment = mongoose.model('Payment', paymentSchema);
 const profileSchema = new mongoose.Schema({
   // Link to payment
   razorpayOrderId: { type: String },
-  name:            { type: String },
+  name:            { type: String, default: null },
   email:           { type: String, default: null },
   phone:           { type: String },
 
@@ -185,7 +185,7 @@ const sendConfirmationEmail = async (payment) => {
       to: payment.email,
       subject: 'Welcome to Shweta Celeb Makeover Hairstyle Masterclass! 🎉',
       html: getStyledEmailHTML({
-        name:   payment.name,
+        name:   payment.name || null,
         phone:  payment.phone,
         email:  payment.email,
         amount: payment.amount,
@@ -210,15 +210,15 @@ app.post('/api/create-order', async (req, res) => {
   try {
     const { name, email, phone, amount } = req.body;
 
-    if (!name || !phone) {
-      return res.status(400).json({ success: false, message: 'Name and phone are required' });
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone are required' });
     }
 
     // Use amount from frontend; fall back to 499 if missing/invalid
     const AMOUNT_INR = (typeof amount === 'number' && amount > 0) ? amount : 499;
 
     const payment = new Payment({
-      name,
+      name: name || null,
       email: email || null,   // store null if not provided
       phone,
       amount: AMOUNT_INR,
@@ -234,7 +234,7 @@ app.post('/api/create-order', async (req, res) => {
       currency: 'INR',
       receipt:  payment._id.toString(),
       notes: {
-        customer_name:  name,
+        customer_name:  name || null,
         customer_email: email || '',
         customer_phone: phone,
         payment_db_id:  payment._id.toString(),
@@ -249,7 +249,7 @@ app.post('/api/create-order', async (req, res) => {
     // Create early profile at payment initiation
     await Profile.create({
       razorpayOrderId: order.id,
-      name,
+      name: name || null,
       email: email || null,
       phone,
       hasPurchasedCourse: false,
@@ -284,7 +284,7 @@ app.post('/api/save-profile', async (req, res) => {
           state,
           occupation,
           reason,
-          name: name || undefined,
+          name: name || null,
           email: email || null,
         },
       },
@@ -359,7 +359,7 @@ app.post('/api/verify-payment', async (req, res) => {
     await sendMetaCAPIEvent({
       eventName: 'Purchase',
       eventId: event_id,
-      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name },
+      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name || null },
       customData: { value: updatedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
       sourceUrl: req.headers.referer,
       clientIp: req.ip || req.headers['x-forwarded-for'],
@@ -409,6 +409,10 @@ app.post('/api/webhook', async (req, res) => {
           ? paymentEntity.amount / 100
           : null;
 
+        const existingPayment = await Payment.findOne({ razorpayOrderId: orderId });
+        if (!existingPayment || existingPayment.status === 'paid') break; // ← add this
+
+
         const capturedPayment = await Payment.findOneAndUpdate(
           { razorpayOrderId: orderId },
           {
@@ -434,10 +438,69 @@ app.post('/api/webhook', async (req, res) => {
           if (!capturedPayment.emailSent) {
             await sendConfirmationEmail(capturedPayment);
           }
+          
+          await sendMetaCAPIEvent({
+            eventName: 'Purchase',
+            eventId: `purchase_${orderId}`,
+            userData: { phone: capturedPayment.phone, email: capturedPayment.email, name: capturedPayment.name || null },
+            customData: { value: capturedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
+            sourceUrl: 'https://shwetamakeover.online',
+            clientIp: req.ip || req.headers['x-forwarded-for'],
+            userAgent: req.headers['user-agent'],
+          });
         }
 
         break;
       }
+
+      case 'order.paid': {
+        const orderEntity = payload.order?.entity || payload.order;
+        if (!orderEntity) break;
+    
+        const orderId = orderEntity.id;
+    
+        // Only act if not already marked paid (idempotency guard)
+        const existingPayment = await Payment.findOne({ razorpayOrderId: orderId });
+        if (!existingPayment || existingPayment.status === 'paid') break;
+    
+        const paidPayment = await Payment.findOneAndUpdate(
+          { razorpayOrderId: orderId, status: { $ne: 'paid' } },
+          { status: 'paid' },
+          { new: true }
+        );
+    
+        if (paidPayment) {
+          await Profile.findOneAndUpdate(
+            { razorpayOrderId: orderId },
+            {
+              $set: {
+                hasPurchasedCourse: true,
+                coursePurchasePrice: paidPayment.amount,
+                courseName: '3-Day Hairstyle Masterclass',
+              },
+            }
+          );
+    
+          if (!paidPayment.emailSent) {
+            await sendConfirmationEmail(paidPayment);
+          }
+
+          await sendMetaCAPIEvent({
+            eventName: 'Purchase',
+            eventId: `purchase_${orderId}`,
+            userData: { phone: paidPayment.phone, email: paidPayment.email, name: paidPayment.name || null },
+            customData: { value: paidPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
+            sourceUrl: 'https://shwetamakeover.online',
+            clientIp: req.ip || req.headers['x-forwarded-for'],
+            userAgent: req.headers['user-agent'],
+          });
+    
+          console.log('✅ order.paid handled for:', orderId);
+        }
+    
+        break;
+      }
+    
 
       case 'payment.failed': {
         const paymentEntity = payload.payment?.entity || payload.payment;
