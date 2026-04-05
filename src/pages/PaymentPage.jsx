@@ -3,7 +3,7 @@ import { Loader, XCircle } from 'lucide-react';
 import './PaymentPage.css'
 import PostPaymentForm from './PostPaymentForm'
 import OrderConfirm from './OrderConfirm'
-import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
+import { usePrice } from '../hooks/usePrice';
 import clevertap from '../hooks/clevertap';
 import { trackEvent, trackCustomEvent } from '../hooks/meta'
 
@@ -20,53 +20,24 @@ function PaymentPage({ onBackToHome } = {}) {
   const [couponOpen, setCouponOpen]           = useState(false)
   const [gstOpen, setGstOpen]                 = useState(false)
   const [couponCode, setCouponCode]           = useState('')
-  const [courseAmount, setCourseAmount] = useState(5000);
-  const [originalAmount, setOriginalAmount] = useState(5000);
-  const [pricingVariant, setPricingVariant] = useState("default");
+  const { coursePrice: courseAmount, originalPrice: originalAmount, pricingVariant, urgencyTest, urgencyVariant } = usePrice()
   const [razorpayOrderId, setRazorpayOrderId] = useState(null);
   const eventFiredRef = useRef(false);
 
-
   useEffect(() => {
-    async function loadConfig() {
-      try {
-        // Fetch and activate Firebase Remote Config
-        await fetchAndActivate(remoteConfig);
-
-        // Get remote config values
-        const price = getValue(remoteConfig, "course_price").asString();
-        const original = getValue(remoteConfig, "original_price").asString();
-        const variant = getValue(remoteConfig, "pricing_variant").asString();
-
-        // Update state with defaults if values are missing
-        setCourseAmount(Number(price) || 499);
-        setOriginalAmount(Number(original) || 999);
-        setPricingVariant(variant || "default");
-
-        if (!eventFiredRef.current) {
-          eventFiredRef.current = true;
-          clevertap.event.push('payment_page_shown', {
-            pricing_variant: `pricing_${price}`,
-          });
-          trackEvent('ViewContent', {
-            content_name: '3-Day Hairstyle Masterclass',
-            value: Number(price) || 499,
-            currency: 'INR',
-            pricing_variant: `pricing_${price}`,
-          });
-        }
-
-      } catch (err) {
-        console.error("Remote config error:", err);
-        // fallback to default values
-        setCourseAmount(499);
-        setOriginalAmount(999);
-        setPricingVariant("default");
-      }
-    }
-  
-    loadConfig();
-  }, []); // run once on mount
+    if (eventFiredRef.current) return;
+    eventFiredRef.current = true;
+    clevertap.event.push('payment_page_shown', {
+      pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
+    });
+    trackEvent('ViewContent', {
+      content_name: '3-Day Hairstyle Masterclass',
+      value: courseAmount,
+      currency: 'INR',
+      pricing_variant: `pricing_${courseAmount}`,
+    });
+  }, [courseAmount]);
 
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
 
@@ -87,6 +58,7 @@ function PaymentPage({ onBackToHome } = {}) {
     clevertap.event.push('Payment Initiated', {
       amount: courseAmount,
       pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
       phone: formData.phone,
       name: formData.name,
     })
@@ -162,6 +134,7 @@ function PaymentPage({ onBackToHome } = {}) {
             amount: courseAmount,
             original_price: originalAmount,
             pricing_variant: `pricing_${courseAmount}`,
+            urgency_variant: urgencyVariant,
             course_name: '3-Day Hairstyle Masterclass',
             razorpay_order_id: razorpayResponse.razorpay_order_id,
             phone: formData.phone,
@@ -185,7 +158,7 @@ function PaymentPage({ onBackToHome } = {}) {
         theme: { color: '#17120e' },
         modal: {
           ondismiss: function () {
-            clevertap.event.push('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, name: formData.name, phone: formData.phone })
+            clevertap.event.push('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: formData.name, phone: formData.phone })
             trackCustomEvent('Payment Dismissed', {
               value: courseAmount,
               pricing_variant: `pricing_${courseAmount}`,
@@ -369,13 +342,21 @@ function PaymentPage({ onBackToHome } = {}) {
               <span className="pp-service-name">3-Day Hairstyle Masterclass</span>
               <div className="pp-service-prices">
                 <span className="pp-disc-price" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
+                {urgencyTest && <span className="pp-orig-price" data-clarity-unmask="True">₹499.00</span>}
               </div>
             </div>
           </div>
           <div className="pp-amount-divider" />
           <div className="pp-total-line">
             <span className="pp-total-label">Amount to be paid</span>
-            <span className="pp-total-value" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
+            {urgencyTest ? (
+              <span className="pp-total-values">
+                <span className="pp-total-value" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
+                <span className="pp-total-orig" data-clarity-unmask="True">₹499.00</span>
+              </span>
+            ) : (
+              <span className="pp-total-value" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
+            )}
           </div>
         </div>
 

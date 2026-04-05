@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import './PostPaymentForm.css'
 import clevertap from '../hooks/clevertap'
 import { trackCustomEvent } from '../hooks/meta'
+import { usePrice } from '../hooks/usePrice'
 
 const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -17,6 +18,7 @@ const FIELDS = [
 ]
 
 export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrderId, onComplete }) {
+  const { urgencyVariant } = usePrice()
   const [form, setForm]           = useState({ phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]       = useState({})
@@ -66,6 +68,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         state: form.state,
         occupation: form.occupation,
         pricing_variant: `pricing_${courseAmount}`,
+        urgency_variant: urgencyVariant,
         name: paymentData.name,
         phone: paymentData.phone,
       })

@@ -30,6 +30,8 @@ remoteConfig.settings = {
 remoteConfig.defaultConfig = {
   course_price: "499",
   original_price: "999",
+  pricing_variant: "default",
+  urgency_test: "false",
 };
 
 // ✅ Export everything you need

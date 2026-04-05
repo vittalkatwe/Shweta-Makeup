@@ -2,12 +2,14 @@ import React, { useEffect, useRef } from 'react'
 import './OrderConfirm.css'
 import clevertap from '../hooks/clevertap'
 import { trackCustomEvent } from '../hooks/meta'
+import { usePrice } from '../hooks/usePrice'
 
 export default function OrderConfirm({ paymentData = {}, profileData = {}, courseAmount }) {
   const canvasRef = useRef(null)
+  const { urgencyVariant } = usePrice()
 
   useEffect(() => {
-    clevertap.event.push('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, name: paymentData.name, phone: paymentData.phone })
+    clevertap.event.push('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone })
     trackCustomEvent('Order Confirmed', {
       course_name: '3-Day Hairstyle Masterclass',
       pricing_variant: `pricing_${courseAmount}`,
