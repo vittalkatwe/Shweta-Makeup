@@ -83,6 +83,8 @@ const paymentSchema = new mongoose.Schema({
   errorCode:        { type: String },
   errorDescription: { type: String },
   emailSent:        { type: Boolean, default: false },
+  source:  { type: String, enum: ['website', 'whatsapp'], default: 'website' },
+  remark:  { type: String, default: null },
 });
 
 const Payment = mongoose.model('Payment', paymentSchema);
@@ -557,6 +559,109 @@ app.get('/api/profiles', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch profiles' });
   }
 });
+
+
+// ============================================================
+// ADMIN: Create manual order (WhatsApp / walk-in)
+// POST /api/admin/orders
+// ============================================================
+app.post('/api/admin/orders', async (req, res) => {
+  try {
+    const { name, phone, amount, source, whatsappPhone, remark, timestamp } = req.body;
+
+    if (!phone || !amount) {
+      return res.status(400).json({ success: false, message: 'Phone and amount are required' });
+    }
+
+    const payment = new Payment({
+      name: name || null,
+      email: null,
+      phone,
+      amount,
+      currency: 'INR',
+      status: 'paid',
+      source: source || 'whatsapp',       // 'whatsapp' | 'website'
+      remark: remark || null,
+      timestamp: timestamp ? new Date(timestamp) : new Date(),
+    });
+
+    await payment.save();
+
+    // Also create a profile record
+    await Profile.create({
+      razorpayOrderId: null,
+      name: name || null,
+      email: null,
+      phone,
+      whatsappPhone: whatsappPhone || phone,
+      hasPurchasedCourse: true,
+      coursePurchasePrice: amount,
+      courseName: '3-Day Hairstyle Masterclass',
+      timestamp: payment.timestamp,
+    });
+
+    return res.json({ success: true, payment });
+  } catch (error) {
+    console.error('❌ Admin create order error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============================================================
+// ADMIN: Update remark / source on a payment
+// PATCH /api/admin/payments/:id
+// ============================================================
+app.patch('/api/admin/payments/:id', async (req, res) => {
+  try {
+    const { remark, source, name, phone, amount } = req.body;
+
+    const updateFields = {};
+    if (remark   !== undefined) updateFields.remark = remark;
+    if (source   !== undefined) updateFields.source = source;
+    if (name     !== undefined) updateFields.name   = name;
+    if (phone    !== undefined) updateFields.phone  = phone;
+    if (amount   !== undefined) updateFields.amount = amount;
+
+    const updated = await Payment.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    return res.json({ success: true, payment: updated });
+  } catch (error) {
+    console.error('❌ Admin update error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============================================================
+// ADMIN: Delete a payment (and its profile)
+// DELETE /api/admin/payments/:id
+// ============================================================
+app.delete('/api/admin/payments/:id', async (req, res) => {
+  try {
+    const payment = await Payment.findByIdAndDelete(req.params.id);
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    // Also delete linked profile if it was a manual order
+    if (payment.razorpayOrderId) {
+      await Profile.findOneAndDelete({ razorpayOrderId: payment.razorpayOrderId });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Admin delete error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 
 app.get('/api/health', (_req, res) => res.json({ status: 'OK', message: 'Server is running' }));
 
