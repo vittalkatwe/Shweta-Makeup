@@ -23,6 +23,8 @@ function PaymentPage({ onBackToHome } = {}) {
   const [couponCode, setCouponCode]           = useState('')
   const { coursePrice: courseAmount, originalPrice: originalAmount, pricingVariant, urgencyTest, urgencyVariant } = usePrice()
   const [razorpayOrderId, setRazorpayOrderId] = useState(null);
+  const [phoneError, setPhoneError]           = useState(false)
+  const phoneRowRef = useRef(null);
   const eventFiredRef = useRef(false);
 
   useEffect(() => {
@@ -44,7 +46,10 @@ function PaymentPage({ onBackToHome } = {}) {
     });
   }, [courseAmount]);
 
-  const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
+  const handleInputChange = (e) => {
+    if (e.target.name === 'phone') setPhoneError(false)
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
   const loadRazorpayScript = () =>
     new Promise((resolve) => {
@@ -55,9 +60,16 @@ function PaymentPage({ onBackToHome } = {}) {
       document.body.appendChild(script)
     })
 
+  const isPhoneValid = /^\d{10}$/.test(formData.phone)
+
   const handlePayment = async () => {
-    if (!formData.phone) {
-      alert('Please fill in your name and phone number')
+    if (!isPhoneValid) {
+      setPhoneError(true)
+      if (phoneRowRef.current) {
+        phoneRowRef.current.classList.remove('pp-shake')
+        void phoneRowRef.current.offsetWidth
+        phoneRowRef.current.classList.add('pp-shake')
+      }
       return
     }
     clevertap.event.push('Payment Initiated', {
@@ -297,7 +309,7 @@ function PaymentPage({ onBackToHome } = {}) {
     )
   }
 
-  const canPay = Boolean(formData.phone)
+  const canPay = isPhoneValid
 
   const INDIAN_STATES = [
     'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
@@ -333,7 +345,7 @@ function PaymentPage({ onBackToHome } = {}) {
        
 
           <div className="pp-field-divider" />
-          <div className="pp-input-row" data-clarity-unmask="true">
+          <div className="pp-input-row" data-clarity-unmask="true" ref={phoneRowRef}>
             <div className="pp-phone-flag-block">
               <span style={{ fontSize: 18, lineHeight: 1 }}>🇮🇳</span>
               <span className="pp-phone-code" data-clarity-unmask="true">+91</span>
@@ -341,7 +353,9 @@ function PaymentPage({ onBackToHome } = {}) {
             </div>
             <div className="pp-phone-divider" data-clarity-unmask="true"/>
             <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" data-clarity-unmask="true" />
-          </div>        </div>
+          </div>
+          {phoneError && <div className="pp-phone-error">Please enter your number to proceed</div>}
+        </div>
 
         {/* Coupon card */}
         {/* <div className="pp-card">
@@ -393,7 +407,7 @@ function PaymentPage({ onBackToHome } = {}) {
           type="button"
           className={`pp-proceed-btn${loading || !canPay ? ' is-disabled' : ''}`}
           onClick={handlePayment}
-          disabled={loading || !canPay}
+          disabled={loading}
           data-clarity-unmask="true"
         >
           {loading
