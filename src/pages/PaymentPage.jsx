@@ -3,9 +3,10 @@ import { Loader, XCircle } from 'lucide-react';
 import './PaymentPage.css'
 import PostPaymentForm from './PostPaymentForm'
 import OrderConfirm from './OrderConfirm'
-import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
+import { usePrice } from '../hooks/usePrice';
 import clevertap from '../hooks/clevertap';
 import { trackEvent, trackCustomEvent } from '../hooks/meta'
+import { trackEvent as clarityTrackEvent, identifyUser as clarityIdentifyUser } from '../hooks/clarity'
 
 const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
@@ -20,55 +21,35 @@ function PaymentPage({ onBackToHome } = {}) {
   const [couponOpen, setCouponOpen]           = useState(false)
   const [gstOpen, setGstOpen]                 = useState(false)
   const [couponCode, setCouponCode]           = useState('')
-  const [courseAmount, setCourseAmount] = useState(999);
-  const [originalAmount, setOriginalAmount] = useState(999);
-  const [pricingVariant, setPricingVariant] = useState("default");
+  const { coursePrice: courseAmount, originalPrice: originalAmount, pricingVariant, urgencyTest, urgencyVariant } = usePrice()
   const [razorpayOrderId, setRazorpayOrderId] = useState(null);
+  const [phoneError, setPhoneError]           = useState(false)
+  const phoneRowRef = useRef(null);
   const eventFiredRef = useRef(false);
 
-
   useEffect(() => {
-    async function loadConfig() {
-      try {
-        // Fetch and activate Firebase Remote Config
-        await fetchAndActivate(remoteConfig);
+    if (eventFiredRef.current) return;
+    eventFiredRef.current = true;
+    clevertap.event.push('payment_page_shown', {
+      pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
+    });
+    clarityTrackEvent('payment_page_shown', {
+      pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
+    });
+    trackEvent('ViewContent', {
+      content_name: '3-Day Hairstyle Masterclass',
+      value: courseAmount,
+      currency: 'INR',
+      pricing_variant: `pricing_${courseAmount}`,
+    });
+  }, [courseAmount]);
 
-        // Get remote config values
-        const price = getValue(remoteConfig, "course_price").asString();
-        const original = getValue(remoteConfig, "original_price").asString();
-        const variant = getValue(remoteConfig, "pricing_variant").asString();
-
-        // Update state with defaults if values are missing
-        setCourseAmount(Number(price) || 499);
-        setOriginalAmount(Number(original) || 999);
-        setPricingVariant(variant || "default");
-
-        if (!eventFiredRef.current) {
-          eventFiredRef.current = true;
-          clevertap.event.push('payment_page_shown', {
-            pricing_variant: `pricing_${price}`,
-          });
-          trackEvent('ViewContent', {
-            content_name: '3-Day Hairstyle Masterclass',
-            value: Number(price) || 499,
-            currency: 'INR',
-            pricing_variant: `pricing_${price}`,
-          });
-        }
-
-      } catch (err) {
-        console.error("Remote config error:", err);
-        // fallback to default values
-        setCourseAmount(499);
-        setOriginalAmount(999);
-        setPricingVariant("default");
-      }
-    }
-  
-    loadConfig();
-  }, []); // run once on mount
-
-  const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
+  const handleInputChange = (e) => {
+    if (e.target.name === 'phone') setPhoneError(false)
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
   const loadRazorpayScript = () =>
     new Promise((resolve) => {
@@ -79,14 +60,29 @@ function PaymentPage({ onBackToHome } = {}) {
       document.body.appendChild(script)
     })
 
+  const isPhoneValid = /^\d{10}$/.test(formData.phone)
+
   const handlePayment = async () => {
-    if (!formData.phone) {
-      alert('Please fill in your name and phone number')
+    if (!isPhoneValid) {
+      setPhoneError(true)
+      if (phoneRowRef.current) {
+        phoneRowRef.current.classList.remove('pp-shake')
+        void phoneRowRef.current.offsetWidth
+        phoneRowRef.current.classList.add('pp-shake')
+      }
       return
     }
     clevertap.event.push('Payment Initiated', {
       amount: courseAmount,
       pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
+      phone: formData.phone,
+      name: formData.name,
+    })
+    clarityTrackEvent('Payment Initiated', {
+      amount: courseAmount,
+      pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
       phone: formData.phone,
       name: formData.name,
     })
@@ -106,6 +102,11 @@ function PaymentPage({ onBackToHome } = {}) {
         Phone: `+91${formData.phone}`,
         Identity: formData.phone,
       },
+    })
+    clarityIdentifyUser({
+      name: formData.name,
+      email: formData.email,
+      phone: `+91${formData.phone}`,
     })
     setLoading(true)
     try {
@@ -162,6 +163,17 @@ function PaymentPage({ onBackToHome } = {}) {
             amount: courseAmount,
             original_price: originalAmount,
             pricing_variant: `pricing_${courseAmount}`,
+            urgency_variant: urgencyVariant,
+            course_name: '3-Day Hairstyle Masterclass',
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            phone: formData.phone,
+            name: formData.name,
+          });
+          clarityTrackEvent('Payment Success', {
+            amount: courseAmount,
+            original_price: originalAmount,
+            pricing_variant: `pricing_${courseAmount}`,
+            urgency_variant: urgencyVariant,
             course_name: '3-Day Hairstyle Masterclass',
             razorpay_order_id: razorpayResponse.razorpay_order_id,
             phone: formData.phone,
@@ -185,7 +197,8 @@ function PaymentPage({ onBackToHome } = {}) {
         theme: { color: '#17120e' },
         modal: {
           ondismiss: function () {
-            clevertap.event.push('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, name: formData.name, phone: formData.phone })
+            clevertap.event.push('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: formData.name, phone: formData.phone })
+            clarityTrackEvent('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: formData.name, phone: formData.phone })
             trackCustomEvent('Payment Dismissed', {
               value: courseAmount,
               pricing_variant: `pricing_${courseAmount}`,
@@ -296,7 +309,7 @@ function PaymentPage({ onBackToHome } = {}) {
     )
   }
 
-  const canPay = Boolean(formData.phone)
+  const canPay = isPhoneValid
 
   const INDIAN_STATES = [
     'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
@@ -332,15 +345,17 @@ function PaymentPage({ onBackToHome } = {}) {
        
 
           <div className="pp-field-divider" />
-          <div className="pp-input-row" data-clarity-unmask="True">
+          <div className="pp-input-row" data-clarity-unmask="true" ref={phoneRowRef}>
             <div className="pp-phone-flag-block">
               <span style={{ fontSize: 18, lineHeight: 1 }}>🇮🇳</span>
-              <span className="pp-phone-code" data-clarity-unmask="True">+91</span>
-              <span className="pp-phone-chevron" data-clarity-unmask="True">▾</span>
+              <span className="pp-phone-code" data-clarity-unmask="true">+91</span>
+              <span className="pp-phone-chevron" data-clarity-unmask="true">▾</span>
             </div>
-            <div className="pp-phone-divider" data-clarity-unmask="True"/>
-            <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" data-clarity-unmask="True" />
-          </div>        </div>
+            <div className="pp-phone-divider" data-clarity-unmask="true"/>
+            <input className="pp-bare-input" type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" data-clarity-unmask="true" />
+          </div>
+          {phoneError && <div className="pp-phone-error">Please enter your number to proceed</div>}
+        </div>
 
         {/* Coupon card */}
         {/* <div className="pp-card">
@@ -365,14 +380,22 @@ function PaymentPage({ onBackToHome } = {}) {
             <div className="pp-service-line">
               <span className="pp-service-name">3-Day Hairstyle Masterclass</span>
               <div className="pp-service-prices">
-                <span className="pp-disc-price" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
+                <span className="pp-disc-price" data-clarity-unmask="true">₹{courseAmount.toFixed(2)}</span>
+                {urgencyTest && <span className="pp-orig-price" data-clarity-unmask="true">₹499.00</span>}
               </div>
             </div>
           </div>
           <div className="pp-amount-divider" />
           <div className="pp-total-line">
             <span className="pp-total-label">Amount to be paid</span>
-            <span className="pp-total-value" data-clarity-unmask="True">₹{courseAmount.toFixed(2)}</span>
+            {urgencyTest ? (
+              <span className="pp-total-values">
+                <span className="pp-total-value" data-clarity-unmask="true">₹{courseAmount.toFixed(2)}</span>
+                <span className="pp-total-orig" data-clarity-unmask="true">₹499.00</span>
+              </span>
+            ) : (
+              <span className="pp-total-value" data-clarity-unmask="true">₹{courseAmount.toFixed(2)}</span>
+            )}
           </div>
         </div>
 
@@ -384,12 +407,12 @@ function PaymentPage({ onBackToHome } = {}) {
           type="button"
           className={`pp-proceed-btn${loading || !canPay ? ' is-disabled' : ''}`}
           onClick={handlePayment}
-          disabled={loading || !canPay}
-          data-clarity-unmask="True"
+          disabled={loading}
+          data-clarity-unmask="true"
         >
           {loading
             ? <><Loader size={17} className="pp-spin" /> Processing…</>
-            : <>Proceed to pay <strong data-clarity-unmask="True">₹{courseAmount}.00</strong></>
+            : <>Proceed to pay <strong data-clarity-unmask="true">₹{courseAmount}.00</strong></>
           }
         </button>
       </div>

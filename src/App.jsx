@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Loader } from 'lucide-react'
 import clevertap from './hooks/clevertap'
 import { trackEvent, trackCustomEvent } from './hooks/meta'
-import { remoteConfig, fetchAndActivate, getValue } from './hooks/firebase'
+import { trackEvent as clarityTrackEvent } from './hooks/clarity'
+import { PriceProvider, usePrice } from './hooks/usePrice'
 import AnnouncementBar from './components/AnnouncementBar'
 import HeroSection from './components/HeroSection'
 import BrandsSection from './components/BrandsSection'
@@ -21,26 +23,23 @@ import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsOfUse from './pages/TermsOfUse.jsx'
 
 function HomePage() {
-  const [coursePrice, setCoursePrice] = useState('499')
+  const { coursePrice, urgencyVariant } = usePrice()
   const eventFiredRef = useRef(false)
   const firedSectionsRef = useRef(new Set())
 
   useEffect(() => {
-    fetchAndActivate(remoteConfig)
-      .then(() => {
-        const price = getValue(remoteConfig, 'course_price').asString()
-        setCoursePrice(price)
-
-        if (!eventFiredRef.current) {
-          eventFiredRef.current = true
-          clevertap.event.push('homepage_shown', {
-            pricing_variant: `pricing_${price}`,
-          })
-          trackEvent('PageView', { pricing_variant: `pricing_${price}` })
-        }
-      })
-      .catch(() => {})
-  }, [])
+    if (eventFiredRef.current) return
+    eventFiredRef.current = true
+    clevertap.event.push('homepage_shown', {
+      pricing_variant: `pricing_${coursePrice}`,
+      urgency_variant: urgencyVariant,
+    })
+    clarityTrackEvent('homepage_shown', {
+      pricing_variant: `pricing_${coursePrice}`,
+      urgency_variant: urgencyVariant,
+    })
+    trackEvent('PageView', { pricing_variant: `pricing_${coursePrice}` })
+  }, [coursePrice])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -69,7 +68,8 @@ function HomePage() {
           const section = entry.target.getAttribute('data-section')
           if (entry.isIntersecting && section && !firedSections.has(section)) {
             firedSections.add(section)
-            clevertap.event.push('homepage_scroll', { section })
+            clevertap.event.push('homepage_scroll', { section, urgency_variant: urgencyVariant })
+            clarityTrackEvent('homepage_scroll', { section, urgency_variant: urgencyVariant })
             trackCustomEvent('homepage_scroll', { section })
             scrollObserver.unobserve(entry.target)
           }
@@ -110,17 +110,46 @@ function HomePage() {
   )
 }
 
+function AppGate() {
+  const { ready } = usePrice()
+  if (!ready) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f6f2ec',
+        }}
+      >
+        <Loader
+          size={32}
+          style={{ color: '#b8912a', animation: 'spin 1s linear infinite' }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/payment" element={<PaymentPage />} />
+      <Route path="/refund" element={<Refund />} />
+      <Route path="/terms" element={<TermsOfUse />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/refund" element={<Refund />} />
-        <Route path="/terms" element={<TermsOfUse />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-      </Routes>
+      <PriceProvider>
+        <AppGate />
+      </PriceProvider>
     </BrowserRouter>
   )
 }

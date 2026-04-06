@@ -1,55 +1,28 @@
 import React from 'react'
-import { useState, useEffect } from 'react';
-import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
+import { usePrice } from '../hooks/usePrice'
 
-const CHECKOUT_URL =
-  '/payment'
+const CHECKOUT_URL = '/payment'
 
 export default function StickyBar() {
-
-  const [courseAmount, setCourseAmount] = useState(999);
-  const [originalAmount, setOriginalAmount] = useState(999);
-  const [pricingVariant, setPricingVariant] = useState("default");
-
-
-  useEffect(() => {
-    async function loadConfig() {
-      try {
-        // Fetch and activate Firebase Remote Config
-        await fetchAndActivate(remoteConfig);
-
-        // Get remote config values
-        const price = getValue(remoteConfig, "course_price").asString();
-        const original = getValue(remoteConfig, "original_price").asString();
-        const variant = getValue(remoteConfig, "pricing_variant").asString();
-
-        // Update state with defaults if values are missing
-        setCourseAmount(Number(price) || 499);
-        setOriginalAmount(Number(original) || 999);
-        setPricingVariant(variant || "default");
-
-      } catch (err) {
-        console.error("Remote config error:", err);
-        // fallback to default values
-        setCourseAmount(499);
-        setOriginalAmount(999);
-        setPricingVariant("default");
-      }
-    }
-
-    loadConfig();
-  }, []); // run once on mount
+  const { coursePrice, urgencyTest } = usePrice()
 
   return (
     <div className="sticky-bar" data-clarity-unmask="True">
       <div>
         <div className="sticky-price">
-          <strong data-clarity-unmask="True">₹{courseAmount}/-</strong>
+          <strong data-clarity-unmask="True">₹{coursePrice}/-</strong>
+          {urgencyTest && <span className="original" data-clarity-unmask="True">₹499</span>}
         </div>
-        <div className="sticky-offer-text">🌟 Limited-Time Offer</div>
+        {urgencyTest ? (
+          <div className="sticky-offer-text sticky-seats">
+            <span className="seats-dot" /> Only <strong>2 seats</strong> remaining
+          </div>
+        ) : (
+          <div className="sticky-offer-text">🌟 Limited-Time Offer</div>
+        )}
       </div>
-      <a href={CHECKOUT_URL} className="sticky-cta" data-clarity-unmask="True">
-        🚀 Join Now <strong data-clarity-unmask="True">₹{courseAmount}</strong>
+      <a href={CHECKOUT_URL} className={`sticky-cta${urgencyTest ? ' cta-pulse' : ''}`} data-clarity-unmask="True">
+        🚀 Join Now <strong data-clarity-unmask="True">₹{coursePrice}</strong>
       </a>
     </div>
   )

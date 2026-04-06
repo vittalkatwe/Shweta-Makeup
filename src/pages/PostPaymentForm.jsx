@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react'
 import './PostPaymentForm.css'
 import clevertap from '../hooks/clevertap'
 import { trackCustomEvent } from '../hooks/meta'
+import { trackEvent as clarityTrackEvent, setProfile as claritySetProfile } from '../hooks/clarity'
+import { usePrice } from '../hooks/usePrice'
 
 const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
@@ -18,10 +20,11 @@ const FIELDS = [
 ]
 
 export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrderId, onComplete }) {
+  const { urgencyVariant } = usePrice()
   const [form, setForm]           = useState({ name: '', phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]       = useState({})
-  const fieldRefs = useRef({}) 
+  const fieldRefs = useRef({})
 
   const validate = () => {
     const errs = {}
@@ -46,7 +49,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
       await fetch(`${BACKEND_URL}/api/save-profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: form.name,
           email: paymentData.email,
           phone: paymentData.phone,
@@ -69,12 +72,28 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
           State: form.state,
         },
       })
+      claritySetProfile({
+        Gender: form.gender === 'Female' ? 'F' : form.gender === 'Male' ? 'M' : undefined,
+        City: form.city,
+        State: form.state,
+      })
       clevertap.event.push('Profile Completed', {
         gender: form.gender,
         city: form.city,
         state: form.state,
         occupation: form.occupation,
         pricing_variant: `pricing_${courseAmount}`,
+        urgency_variant: urgencyVariant,
+        name: form.name,
+        phone: paymentData.phone,
+      })
+      clarityTrackEvent('Profile Completed', {
+        gender: form.gender,
+        city: form.city,
+        state: form.state,
+        occupation: form.occupation,
+        pricing_variant: `pricing_${courseAmount}`,
+        urgency_variant: urgencyVariant,
         name: form.name,
         phone: paymentData.phone,
       })

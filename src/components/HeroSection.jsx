@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { remoteConfig, fetchAndActivate, getValue } from '../hooks/firebase';
+import { usePrice } from '../hooks/usePrice'
 
 const CHECKOUT_URL = '/payment'
 
@@ -157,29 +157,7 @@ const features = [
 ]
 
 export default function HeroSection() {
-  const [courseAmount, setCourseAmount] = useState(999);
-  const [originalAmount, setOriginalAmount] = useState(999);
-  const [pricingVariant, setPricingVariant] = useState("default");
-
-  useEffect(() => {
-    async function loadConfig() {
-      try {
-        await fetchAndActivate(remoteConfig);
-        const price = getValue(remoteConfig, "course_price").asString();
-        const original = getValue(remoteConfig, "original_price").asString();
-        const variant = getValue(remoteConfig, "pricing_variant").asString();
-        setCourseAmount(Number(price) || 499);
-        setOriginalAmount(Number(original) || 999);
-        setPricingVariant(variant || "default");
-      } catch (err) {
-        console.error("Remote config error:", err);
-        setCourseAmount(499);
-        setOriginalAmount(999);
-        setPricingVariant("default");
-      }
-    }
-    loadConfig();
-  }, []);
+  const { coursePrice: courseAmount, urgencyTest } = usePrice()
 
   const videoRef = useRef(null)
   const containerRef = useRef(null)
@@ -426,9 +404,20 @@ export default function HeroSection() {
             ))}
           </div>
 
-          <a href={CHECKOUT_URL} className="cta-button" style={{ animation: 'fadeSlideUp 1s cubic-bezier(0.16,1,0.3,1) 0.9s both' }}>
-            🚀 Join Now for <strong>₹{courseAmount}</strong>
-          </a>
+          {urgencyTest ? (
+            <div className="cta-with-urgency" style={{ animation: 'fadeSlideUp 1s cubic-bezier(0.16,1,0.3,1) 0.9s both' }}>
+              <a href={CHECKOUT_URL} className="cta-button cta-pulse">
+                🚀 Join Now for <strong>₹{courseAmount}</strong> <span className="original">₹499</span>
+              </a>
+              <div className="seats-remaining">
+                <span className="seats-dot" /> Only <strong>2 seats</strong> remaining
+              </div>
+            </div>
+          ) : (
+            <a href={CHECKOUT_URL} className="cta-button" style={{ animation: 'fadeSlideUp 1s cubic-bezier(0.16,1,0.3,1) 0.9s both' }}>
+              🚀 Join Now for <strong>₹{courseAmount}</strong>
+            </a>
+          )}
 
         </div>
       </section>
