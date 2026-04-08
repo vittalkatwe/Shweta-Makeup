@@ -68,7 +68,7 @@ export default function OrderConfirm({ paymentData = {}, profileData = {}, cours
 
   const items = [
     { icon: '🎓', label: 'Course Access', value: 'Hairstyle Masterclass' },
-    { icon: '📅', label: 'Dates', value: '8th, 9th & 10th April' },
+    { icon: '📅', label: 'Dates', value: '13th, 14th & 15th April' },
     { icon: '🕐', label: 'Timings', value: '12 PM – 4 PM' },
     { icon: '📹', label: 'Recording', value: 'Full class video included' },
   ]
@@ -125,7 +125,7 @@ export default function OrderConfirm({ paymentData = {}, profileData = {}, cours
             </div>
             <div className="oc-next-step">
               <div className="oc-next-num">3</div>
-              <div>Show up on April 8th at 12 PM — ready to learn!</div>
+              <div>Show up on April 13th at 12 PM — ready to learn!</div>
             </div>
           </div>
         </div>
