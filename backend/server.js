@@ -85,6 +85,7 @@ const paymentSchema = new mongoose.Schema({
   emailSent:        { type: Boolean, default: false },
   source:  { type: String, enum: ['website', 'whatsapp'], default: 'website' },
   remark:  { type: String, default: null },
+  active:  { type: Boolean, default: true },
 });
 
 const Payment = mongoose.model('Payment', paymentSchema);
@@ -534,18 +535,34 @@ app.post('/api/cancel-subscription', async (_req, res) =>
 
 app.get('/api/payments', async (req, res) => {
   try {
-    const { razorpayOrderId, email } = req.query;
+    const { razorpayOrderId, email, status, search, limit, skip } = req.query;
+
     if (razorpayOrderId) {
       const payment = await Payment.findOne({ razorpayOrderId });
       if (payment) return res.json({ success: true, payment });
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
     if (email) {
-      const payments = await Payment.find({ email }).sort({ timestamp: -1 }).limit(50);
+      const payments = await Payment.find({ email }).sort({ timestamp: -1 });
       return res.json({ success: true, payments });
     }
-    const payments = await Payment.find().sort({ timestamp: -1 }).limit(50);
-    return res.json({ success: true, payments });
+
+    // Build filter
+    const filter = { active: { $ne: false } };
+    if (status) filter.status = status;
+    if (search) {
+      const re = new RegExp(search, 'i');
+      filter.$or = [{ name: re }, { phone: re }, { email: re }];
+    }
+
+    const _limit = parseInt(limit) || 0;
+    const _skip  = parseInt(skip)  || 0;
+    const [payments, total] = await Promise.all([
+      Payment.find(filter).sort({ timestamp: -1 }).skip(_skip).limit(_limit),
+      Payment.countDocuments(filter),
+    ]);
+
+    return res.json({ success: true, payments, total });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch payments' });
   }
@@ -553,8 +570,11 @@ app.get('/api/payments', async (req, res) => {
 
 app.get('/api/profiles', async (req, res) => {
   try {
-    const profiles = await Profile.find().sort({ timestamp: -1 }).limit(100);
-    return res.json({ success: true, profiles });
+    const limit = parseInt(req.query.limit) || 0;
+    const skip  = parseInt(req.query.skip)  || 0;
+    const profiles = await Profile.find().sort({ timestamp: -1 }).skip(skip).limit(limit);
+    const total    = await Profile.countDocuments();
+    return res.json({ success: true, profiles, total });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profiles' });
   }
@@ -613,7 +633,7 @@ app.post('/api/admin/orders', async (req, res) => {
 // ============================================================
 app.patch('/api/admin/payments/:id', async (req, res) => {
   try {
-    const { remark, source, name, phone, amount } = req.body;
+    const { remark, source, name, phone, amount, active } = req.body;
 
     const updateFields = {};
     if (remark   !== undefined) updateFields.remark = remark;
@@ -621,6 +641,7 @@ app.patch('/api/admin/payments/:id', async (req, res) => {
     if (name     !== undefined) updateFields.name   = name;
     if (phone    !== undefined) updateFields.phone  = phone;
     if (amount   !== undefined) updateFields.amount = amount;
+    if (active   !== undefined) updateFields.active = active;
 
     const updated = await Payment.findByIdAndUpdate(
       req.params.id,
@@ -650,9 +671,12 @@ app.delete('/api/admin/payments/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
 
-    // Also delete linked profile if it was a manual order
+    // Delete linked profile — match by orderId OR phone (for manual orders)
     if (payment.razorpayOrderId) {
       await Profile.findOneAndDelete({ razorpayOrderId: payment.razorpayOrderId });
+    } else if (payment.phone) {
+      // Manual/WhatsApp orders: match by phone + no razorpayOrderId
+      await Profile.findOneAndDelete({ phone: payment.phone, razorpayOrderId: null });
     }
 
     return res.json({ success: true });
