@@ -742,7 +742,7 @@ app.get('/api/admin/orders', async (req, res) => {
       {
         $project: {
           _id: 1,
-          name: 1,
+          name: { $ifNull: ['$name', '$profile.name'] },
           phone: 1,
           email: 1,
           amount: 1,
@@ -840,21 +840,62 @@ app.get('/api/admin/payments', async (req, res) => {
         filter.timestamp.$lte = to;
       }
     }
-    if (req.query.search) {
-      const s = req.query.search.trim();
+    const nameSearch = req.query.search ? req.query.search.trim() : null;
+    if (nameSearch) {
+      const s = nameSearch;
       filter.$or = [
         { email: { $regex: s, $options: 'i' } },
         { phone: { $regex: s, $options: 'i' } },
-        { name: { $regex: s, $options: 'i' } },
         { razorpayOrderId: { $regex: s, $options: 'i' } },
         { razorpayPaymentId: { $regex: s, $options: 'i' } },
       ];
     }
 
-    const [payments, total] = await Promise.all([
-      Payment.find(filter).sort({ timestamp: -1 }).skip(skip).limit(limit).lean(),
-      Payment.countDocuments(filter),
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'profiles',
+          localField: 'razorpayOrderId',
+          foreignField: 'razorpayOrderId',
+          as: 'profile',
+        },
+      },
+      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          name: { $ifNull: ['$name', '$profile.name'] },
+          phone: 1,
+          email: 1,
+          amount: 1,
+          status: 1,
+          razorpayOrderId: 1,
+          razorpayPaymentId: 1,
+          emailSent: 1,
+          errorDescription: 1,
+          errorCode: 1,
+          timestamp: 1,
+          source: 1,
+          remark: 1,
+          active: 1,
+        },
+      },
+      ...(nameSearch ? [{ $match: { $or: [
+        { name: { $regex: nameSearch, $options: 'i' } },
+        { email: { $regex: nameSearch, $options: 'i' } },
+        { phone: { $regex: nameSearch, $options: 'i' } },
+        { razorpayOrderId: { $regex: nameSearch, $options: 'i' } },
+        { razorpayPaymentId: { $regex: nameSearch, $options: 'i' } },
+      ]}}] : []),
+      { $sort: { timestamp: -1 } },
+    ];
+
+    const [payments, countResult] = await Promise.all([
+      Payment.aggregate([...pipeline, { $skip: skip }, { $limit: limit }]),
+      Payment.aggregate([...pipeline, { $count: 'total' }]),
     ]);
+    const total = countResult[0]?.total || 0;
 
     res.json({ success: true, payments, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error) {
