@@ -1164,8 +1164,10 @@ app.get('/api/admin/meta-ads/summary', async (req, res) => {
 
     const campaigns = (metaJson.data || []).map(c => {
       const purchaseAction = (c.actions || []).find(a => a.action_type === 'purchase');
+      const lpvAction = (c.actions || []).find(a => a.action_type === 'landing_page_view');
       const spend = parseFloat(c.spend || 0);
       const purchases = purchaseAction ? parseInt(purchaseAction.value || 0) : 0;
+      const landingPageViews = lpvAction ? parseInt(lpvAction.value || 0) : 0;
       return {
         campaignId: c.campaign_id,
         campaignName: c.campaign_name,
@@ -1180,6 +1182,8 @@ app.get('/api/admin/meta-ads/summary', async (req, res) => {
         linkClicks: parseInt(c.inline_link_clicks || 0),
         purchases,
         costPerPurchase: purchases > 0 ? spend / purchases : 0,
+        landingPageViews,
+        costPerLandingPageView: landingPageViews > 0 ? spend / landingPageViews : 0,
       };
     });
 
@@ -1283,8 +1287,10 @@ app.get('/api/admin/meta-ads/campaign/:campaignId/adsets', async (req, res) => {
 
     const adsets = (metaJson.data || []).map(a => {
       const purchaseAction = (a.actions || []).find(x => x.action_type === 'purchase');
+      const lpvAction = (a.actions || []).find(x => x.action_type === 'landing_page_view');
       const spend = parseFloat(a.spend || 0);
       const purchases = purchaseAction ? parseInt(purchaseAction.value || 0) : 0;
+      const landingPageViews = lpvAction ? parseInt(lpvAction.value || 0) : 0;
       return {
         adsetId: a.adset_id,
         adsetName: a.adset_name,
@@ -1300,6 +1306,8 @@ app.get('/api/admin/meta-ads/campaign/:campaignId/adsets', async (req, res) => {
         linkClicks: parseInt(a.inline_link_clicks || 0),
         purchases,
         costPerPurchase: purchases > 0 ? spend / purchases : 0,
+        landingPageViews,
+        costPerLandingPageView: landingPageViews > 0 ? spend / landingPageViews : 0,
       };
     });
 
@@ -1369,8 +1377,10 @@ app.get('/api/admin/meta-ads/adset/:adsetId/ads', async (req, res) => {
 
     const ads = (insightsJson.data || []).map(a => {
       const purchaseAction = (a.actions || []).find(x => x.action_type === 'purchase');
+      const lpvAction = (a.actions || []).find(x => x.action_type === 'landing_page_view');
       const spend = parseFloat(a.spend || 0);
       const purchases = purchaseAction ? parseInt(purchaseAction.value || 0) : 0;
+      const landingPageViews = lpvAction ? parseInt(lpvAction.value || 0) : 0;
       const creative = creativeMap[a.ad_id] || {};
       return {
         adId: a.ad_id,
@@ -1387,6 +1397,8 @@ app.get('/api/admin/meta-ads/adset/:adsetId/ads', async (req, res) => {
         linkClicks: parseInt(a.inline_link_clicks || 0),
         purchases,
         costPerPurchase: purchases > 0 ? spend / purchases : 0,
+        landingPageViews,
+        costPerLandingPageView: landingPageViews > 0 ? spend / landingPageViews : 0,
         thumbnailUrl: creative.thumbnail_url || null,
         title: creative.title || null,
         body: creative.body || null,
