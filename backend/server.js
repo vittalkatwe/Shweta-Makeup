@@ -798,7 +798,7 @@ app.get('/api/admin/orders', async (req, res) => {
           as: 'profile',
         },
       },
-      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+      { $addFields: { profile: { $arrayElemAt: ['$profile', 0] } } },
       {
         $project: {
           _id: 1,
@@ -922,7 +922,7 @@ app.get('/api/admin/payments', async (req, res) => {
           as: 'profile',
         },
       },
-      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+      { $addFields: { profile: { $arrayElemAt: ['$profile', 0] } } },
       {
         $project: {
           _id: 1,
