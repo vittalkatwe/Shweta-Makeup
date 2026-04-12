@@ -1123,6 +1123,8 @@ app.get('/api/admin/profiles/facets', async (_req, res) => {
   }
 });
 
+const EXCLUDED_META_CAMPAIGN_IDS = new Set(['120241058493460767', '120241203934230767']);
+
 // ── Meta Ads: campaign summary ─────────────────────────────
 app.get('/api/admin/meta-ads/summary', async (req, res) => {
   try {
@@ -1184,8 +1186,9 @@ app.get('/api/admin/meta-ads/summary', async (req, res) => {
       };
     });
 
-    const totalSpend = campaigns.reduce((s, c) => s + c.spend, 0);
-    const result = { success: true, totalSpend, campaigns };
+    const filteredCampaigns = campaigns.filter(c => !EXCLUDED_META_CAMPAIGN_IDS.has(c.campaignId));
+    const totalSpend = filteredCampaigns.reduce((s, c) => s + c.spend, 0);
+    const result = { success: true, totalSpend, campaigns: filteredCampaigns };
     setMetaAdsCache(cacheKey, result);
     res.json(result);
   } catch (error) {
@@ -1218,6 +1221,11 @@ app.get('/api/admin/meta-ads/daily', async (req, res) => {
       fields: 'spend,date_start',
       time_increment: '1',
       time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
+      filtering: JSON.stringify([{
+        field: 'campaign.id',
+        operator: 'NOT_IN',
+        value: Array.from(EXCLUDED_META_CAMPAIGN_IDS),
+      }]),
       access_token: META_MARKETING_TOKEN,
     });
 
