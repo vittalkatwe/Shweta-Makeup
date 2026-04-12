@@ -851,8 +851,10 @@ app.get('/api/admin/orders', async (req, res) => {
 // Dashboard KPIs
 app.get('/api/admin/dashboard', async (_req, res) => {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const IST_OFFSET = 330 * 60 * 1000;
+    const nowIST = new Date(Date.now() + IST_OFFSET);
+    nowIST.setUTCHours(0, 0, 0, 0); // midnight IST
+    const todayStart = new Date(nowIST.getTime() - IST_OFFSET); // back to UTC for MongoDB
 
     const [todayPayments, allTimePayments, todayProfiles, allTimeProfiles] = await Promise.all([
       Payment.aggregate([
@@ -1135,11 +1137,12 @@ app.get('/api/admin/meta-ads/summary', async (req, res) => {
       sinceStr = dateFrom;
       untilStr = dateTo;
     } else {
+      const IST_OFFSET = 330 * 60 * 1000;
       const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+      const nowIST = new Date(Date.now() + IST_OFFSET);
+      untilStr = nowIST.toISOString().slice(0, 10);
+      const since = new Date(Date.now() + IST_OFFSET - days * 86400000);
       sinceStr = since.toISOString().slice(0, 10);
-      untilStr = new Date().toISOString().slice(0, 10);
     }
     const cacheKey = `summary_${sinceStr}_${untilStr}`;
     const cached = getMetaAdsCache(cacheKey);
@@ -1207,11 +1210,12 @@ app.get('/api/admin/meta-ads/daily', async (req, res) => {
       sinceStr = dateFrom;
       untilStr = dateTo;
     } else {
+      const IST_OFFSET = 330 * 60 * 1000;
       const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+      const nowIST = new Date(Date.now() + IST_OFFSET);
+      untilStr = nowIST.toISOString().slice(0, 10);
+      const since = new Date(Date.now() + IST_OFFSET - days * 86400000);
       sinceStr = since.toISOString().slice(0, 10);
-      untilStr = new Date().toISOString().slice(0, 10);
     }
     const cacheKey = `daily_${sinceStr}_${untilStr}`;
     const cached = getMetaAdsCache(cacheKey);
@@ -1263,11 +1267,12 @@ app.get('/api/admin/meta-ads/campaign/:campaignId/adsets', async (req, res) => {
       sinceStr = dateFrom;
       untilStr = dateTo;
     } else {
+      const IST_OFFSET = 330 * 60 * 1000;
       const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+      const nowIST = new Date(Date.now() + IST_OFFSET);
+      untilStr = nowIST.toISOString().slice(0, 10);
+      const since = new Date(Date.now() + IST_OFFSET - days * 86400000);
       sinceStr = since.toISOString().slice(0, 10);
-      untilStr = new Date().toISOString().slice(0, 10);
     }
     const cacheKey = `adsets_${campaignId}_${sinceStr}_${untilStr}`;
     const cached = getMetaAdsCache(cacheKey);
@@ -1337,11 +1342,12 @@ app.get('/api/admin/meta-ads/adset/:adsetId/ads', async (req, res) => {
       sinceStr = dateFrom;
       untilStr = dateTo;
     } else {
+      const IST_OFFSET = 330 * 60 * 1000;
       const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+      const nowIST = new Date(Date.now() + IST_OFFSET);
+      untilStr = nowIST.toISOString().slice(0, 10);
+      const since = new Date(Date.now() + IST_OFFSET - days * 86400000);
       sinceStr = since.toISOString().slice(0, 10);
-      untilStr = new Date().toISOString().slice(0, 10);
     }
     const cacheKey = `ads_${adsetId}_${sinceStr}_${untilStr}`;
     const cached = getMetaAdsCache(cacheKey);
