@@ -696,6 +696,94 @@ app.delete('/api/admin/payments/:id', async (req, res) => {
 // ADMIN API Endpoints
 // ============================================================
 
+// Paid orders list (Payment + Profile join)
+app.get('/api/admin/orders', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const matchStage = { status: 'paid', active: { $ne: false } };
+
+    if (req.query.dateFrom || req.query.dateTo) {
+      matchStage.timestamp = {};
+      if (req.query.dateFrom) matchStage.timestamp.$gte = new Date(req.query.dateFrom);
+      if (req.query.dateTo) {
+        const to = new Date(req.query.dateTo);
+        to.setHours(23, 59, 59, 999);
+        matchStage.timestamp.$lte = to;
+      }
+    }
+
+    if (req.query.search) {
+      const s = req.query.search.trim();
+      matchStage.$or = [
+        { email: { $regex: s, $options: 'i' } },
+        { phone: { $regex: s, $options: 'i' } },
+        { name: { $regex: s, $options: 'i' } },
+      ];
+    }
+
+    const postMatchStage = {};
+    if (req.query.gender) postMatchStage['gender'] = req.query.gender;
+    if (req.query.state) postMatchStage['state'] = { $regex: `^${req.query.state}$`, $options: 'i' };
+
+    const pipeline = [
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'profiles',
+          localField: 'razorpayOrderId',
+          foreignField: 'razorpayOrderId',
+          as: 'profile',
+        },
+      },
+      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          phone: 1,
+          email: 1,
+          amount: 1,
+          razorpayOrderId: 1,
+          razorpayPaymentId: 1,
+          timestamp: 1,
+          source: 1,
+          emailSent: 1,
+          whatsappPhone: '$profile.whatsappPhone',
+          gender: '$profile.gender',
+          city: '$profile.city',
+          state: '$profile.state',
+          occupation: '$profile.occupation',
+          reason: '$profile.reason',
+        },
+      },
+      ...(Object.keys(postMatchStage).length > 0 ? [{ $match: postMatchStage }] : []),
+      { $sort: { timestamp: -1 } },
+    ];
+
+    const [allOrders, countResult] = await Promise.all([
+      Payment.aggregate([...pipeline, { $skip: skip }, { $limit: limit }]),
+      Payment.aggregate([...pipeline, { $count: 'total' }]),
+    ]);
+
+    const total = countResult[0]?.total || 0;
+
+    res.json({
+      success: true,
+      orders: allOrders,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Admin orders error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch orders' });
+  }
+});
+
 // Dashboard KPIs
 app.get('/api/admin/dashboard', async (_req, res) => {
   try {
