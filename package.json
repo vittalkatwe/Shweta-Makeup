@@ -7,7 +7,8 @@
     "dev": "vite",
     "dev:backend": "npm --prefix backend run dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:admin": "npm --prefix admin run dev -- -p 3001"
   },
   "dependencies": {
     "clevertap-web-sdk": "^2.6.0",

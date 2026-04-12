@@ -85,6 +85,9 @@ const paymentSchema = new mongoose.Schema({
   emailSent:        { type: Boolean, default: false },
 });
 
+paymentSchema.index({ timestamp: -1 });
+paymentSchema.index({ status: 1, timestamp: -1 });
+
 const Payment = mongoose.model('Payment', paymentSchema);
 
 // ── Profile Schema (post-payment form) ───────────────────
@@ -110,6 +113,8 @@ const profileSchema = new mongoose.Schema({
 
   timestamp: { type: Date, default: Date.now },
 });
+
+profileSchema.index({ timestamp: -1 });
 
 const Profile = mongoose.model('Profile', profileSchema);
 
@@ -555,6 +560,242 @@ app.get('/api/profiles', async (req, res) => {
     return res.json({ success: true, profiles });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profiles' });
+  }
+});
+
+// ============================================================
+// ADMIN API Endpoints
+// ============================================================
+
+// Dashboard KPIs
+app.get('/api/admin/dashboard', async (_req, res) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [todayPayments, allTimePayments, todayProfiles, allTimeProfiles] = await Promise.all([
+      Payment.aggregate([
+        { $match: { status: 'paid', timestamp: { $gte: todayStart } } },
+        { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 } } },
+      ]),
+      Payment.aggregate([
+        { $match: { status: 'paid' } },
+        { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 } } },
+      ]),
+      Profile.countDocuments({ timestamp: { $gte: todayStart } }),
+      Profile.countDocuments(),
+    ]);
+
+    res.json({
+      success: true,
+      today: {
+        customers: todayProfiles,
+        revenue: todayPayments[0]?.revenue || 0,
+        orders: todayPayments[0]?.count || 0,
+      },
+      allTime: {
+        customers: allTimeProfiles,
+        revenue: allTimePayments[0]?.revenue || 0,
+        orders: allTimePayments[0]?.count || 0,
+      },
+    });
+  } catch (error) {
+    console.error('Admin dashboard error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch dashboard stats' });
+  }
+});
+
+// Paginated payments list
+app.get('/api/admin/payments', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (req.query.status) filter.status = req.query.status;
+    if (req.query.dateFrom || req.query.dateTo) {
+      filter.timestamp = {};
+      if (req.query.dateFrom) filter.timestamp.$gte = new Date(req.query.dateFrom);
+      if (req.query.dateTo) {
+        const to = new Date(req.query.dateTo);
+        to.setHours(23, 59, 59, 999);
+        filter.timestamp.$lte = to;
+      }
+    }
+    if (req.query.search) {
+      const s = req.query.search.trim();
+      filter.$or = [
+        { email: { $regex: s, $options: 'i' } },
+        { phone: { $regex: s, $options: 'i' } },
+        { name: { $regex: s, $options: 'i' } },
+        { razorpayOrderId: { $regex: s, $options: 'i' } },
+        { razorpayPaymentId: { $regex: s, $options: 'i' } },
+      ];
+    }
+
+    const [payments, total] = await Promise.all([
+      Payment.find(filter).sort({ timestamp: -1 }).skip(skip).limit(limit).lean(),
+      Payment.countDocuments(filter),
+    ]);
+
+    res.json({ success: true, payments, total, page, limit, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    console.error('Admin payments error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch payments' });
+  }
+});
+
+// Paginated profiles list
+app.get('/api/admin/profiles', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (req.query.gender) filter.gender = req.query.gender;
+    if (req.query.city) filter.city = { $regex: `^${req.query.city}$`, $options: 'i' };
+    if (req.query.state) filter.state = { $regex: `^${req.query.state}$`, $options: 'i' };
+    if (req.query.occupation) filter.occupation = req.query.occupation;
+    if (req.query.hasPurchasedCourse !== undefined) {
+      filter.hasPurchasedCourse = req.query.hasPurchasedCourse === 'true';
+    }
+    if (req.query.dateFrom || req.query.dateTo) {
+      filter.timestamp = {};
+      if (req.query.dateFrom) filter.timestamp.$gte = new Date(req.query.dateFrom);
+      if (req.query.dateTo) {
+        const to = new Date(req.query.dateTo);
+        to.setHours(23, 59, 59, 999);
+        filter.timestamp.$lte = to;
+      }
+    }
+    if (req.query.search) {
+      const s = req.query.search.trim();
+      filter.$or = [
+        { email: { $regex: s, $options: 'i' } },
+        { phone: { $regex: s, $options: 'i' } },
+        { name: { $regex: s, $options: 'i' } },
+      ];
+    }
+
+    const [profiles, total] = await Promise.all([
+      Profile.find(filter).sort({ timestamp: -1 }).skip(skip).limit(limit).lean(),
+      Profile.countDocuments(filter),
+    ]);
+
+    res.json({ success: true, profiles, total, page, limit, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    console.error('Admin profiles error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch profiles' });
+  }
+});
+
+// Payment trends (daily revenue + order count + failed count)
+app.get('/api/admin/payments/trends', async (req, res) => {
+  try {
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days) || 30));
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const trends = await Payment.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+            status: '$status',
+          },
+          count: { $sum: 1 },
+          revenue: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } },
+        },
+      },
+      { $sort: { '_id.date': 1 } },
+    ]);
+
+    // Reshape into { date, revenue, orders, failed }
+    const byDate = {};
+    for (const t of trends) {
+      const d = t._id.date;
+      if (!byDate[d]) byDate[d] = { date: d, revenue: 0, orders: 0, failed: 0 };
+      if (t._id.status === 'paid') {
+        byDate[d].revenue = t.revenue;
+        byDate[d].orders = t.count;
+      } else if (t._id.status === 'failed') {
+        byDate[d].failed = t.count;
+      }
+    }
+
+    // Fill missing days
+    const result = [];
+    const current = new Date(startDate);
+    const now = new Date();
+    while (current <= now) {
+      const key = current.toISOString().slice(0, 10);
+      result.push(byDate[key] || { date: key, revenue: 0, orders: 0, failed: 0 });
+      current.setDate(current.getDate() + 1);
+    }
+
+    res.json({ success: true, trends: result });
+  } catch (error) {
+    console.error('Admin payment trends error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch payment trends' });
+  }
+});
+
+// Profile trends (daily registration count)
+app.get('/api/admin/profiles/trends', async (req, res) => {
+  try {
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days) || 30));
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const trends = await Profile.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const byDate = {};
+    for (const t of trends) byDate[t._id] = t.count;
+
+    const result = [];
+    const current = new Date(startDate);
+    const now = new Date();
+    while (current <= now) {
+      const key = current.toISOString().slice(0, 10);
+      result.push({ date: key, count: byDate[key] || 0 });
+      current.setDate(current.getDate() + 1);
+    }
+
+    res.json({ success: true, trends: result });
+  } catch (error) {
+    console.error('Admin profile trends error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch profile trends' });
+  }
+});
+
+// Profile facets (distinct values for filter dropdowns)
+app.get('/api/admin/profiles/facets', async (_req, res) => {
+  try {
+    const [genders, cities, states, occupations] = await Promise.all([
+      Profile.distinct('gender').then(v => v.filter(Boolean).sort()),
+      Profile.distinct('city').then(v => v.filter(Boolean).sort()),
+      Profile.distinct('state').then(v => v.filter(Boolean).sort()),
+      Profile.distinct('occupation').then(v => v.filter(Boolean).sort()),
+    ]);
+
+    res.json({ success: true, genders, cities, states, occupations });
+  } catch (error) {
+    console.error('Admin facets error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch facets' });
   }
 });
 
