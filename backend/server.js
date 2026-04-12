@@ -1076,7 +1076,7 @@ app.get('/api/admin/profiles/facets', async (_req, res) => {
 app.post('/api/admin/sync-source', async (req, res) => {
   try {
     const paidPayments = await Payment.find(
-      { status: 'paid', source: { $exists: true, $ne: null } },
+      { status: 'paid' },
       { razorpayOrderId: 1, source: 1 }
     ).lean();
 
@@ -1089,7 +1089,7 @@ app.post('/api/admin/sync-source', async (req, res) => {
       .map(p => ({
         updateOne: {
           filter: { razorpayOrderId: p.razorpayOrderId },
-          update: { $set: { source: p.source } },
+          update: { $set: { source: p.source || 'website' } },
         },
       }));
 
