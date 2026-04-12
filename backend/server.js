@@ -86,6 +86,7 @@ const paymentSchema = new mongoose.Schema({
   source:  { type: String, enum: ['website', 'whatsapp'], default: 'website' },
   remark:  { type: String, default: null },
   active:  { type: Boolean, default: true },
+  isDeleted: { type: Boolean, default: false },
 });
 
 paymentSchema.index({ timestamp: -1 });
@@ -115,6 +116,7 @@ const profileSchema = new mongoose.Schema({
   courseName:          { type: String },
 
   source: { type: String, enum: ['website', 'whatsapp'], default: 'website' },
+  isDeleted: { type: Boolean, default: false },
 
   timestamp: { type: Date, default: Date.now },
 });
@@ -594,7 +596,7 @@ app.get('/api/profiles', async (req, res) => {
 // ============================================================
 app.post('/api/admin/orders', async (req, res) => {
   try {
-    const { name, phone, amount, source, whatsappPhone, remark, timestamp } = req.body;
+    const { name, phone, amount, source, whatsappPhone, remark, timestamp, email, gender, city, state, occupation } = req.body;
 
     if (!phone || !amount) {
       return res.status(400).json({ success: false, message: 'Phone and amount are required' });
@@ -602,12 +604,12 @@ app.post('/api/admin/orders', async (req, res) => {
 
     const payment = new Payment({
       name: name || null,
-      email: null,
+      email: email || null,
       phone,
       amount,
       currency: 'INR',
       status: 'paid',
-      source: source || 'whatsapp',       // 'whatsapp' | 'website'
+      source: source || 'whatsapp',
       remark: remark || null,
       timestamp: timestamp ? new Date(timestamp) : new Date(),
     });
@@ -618,9 +620,14 @@ app.post('/api/admin/orders', async (req, res) => {
     await Profile.create({
       razorpayOrderId: null,
       name: name || null,
-      email: null,
+      email: email || null,
       phone,
       whatsappPhone: whatsappPhone || phone,
+      gender: gender || undefined,
+      city: city || undefined,
+      state: state || undefined,
+      occupation: occupation || undefined,
+      source: source || 'whatsapp',
       hasPurchasedCourse: true,
       coursePurchasePrice: amount,
       courseName: '3-Day Hairstyle Masterclass',
@@ -673,22 +680,52 @@ app.patch('/api/admin/payments/:id', async (req, res) => {
 // ============================================================
 app.delete('/api/admin/payments/:id', async (req, res) => {
   try {
-    const payment = await Payment.findByIdAndDelete(req.params.id);
+    const payment = await Payment.findByIdAndUpdate(
+      req.params.id,
+      { $set: { isDeleted: true } },
+      { new: true }
+    );
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
 
-    // Delete linked profile — match by orderId OR phone (for manual orders)
+    // Soft-delete linked profile — match by orderId OR phone (for manual orders)
     if (payment.razorpayOrderId) {
-      await Profile.findOneAndDelete({ razorpayOrderId: payment.razorpayOrderId });
+      await Profile.findOneAndUpdate(
+        { razorpayOrderId: payment.razorpayOrderId },
+        { $set: { isDeleted: true } }
+      );
     } else if (payment.phone) {
-      // Manual/WhatsApp orders: match by phone + no razorpayOrderId
-      await Profile.findOneAndDelete({ phone: payment.phone, razorpayOrderId: null });
+      await Profile.findOneAndUpdate(
+        { phone: payment.phone, razorpayOrderId: null },
+        { $set: { isDeleted: true } }
+      );
     }
 
     return res.json({ success: true });
   } catch (error) {
     console.error('❌ Admin delete error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============================================================
+// ADMIN: Soft-delete a profile
+// DELETE /api/admin/profiles/:id
+// ============================================================
+app.delete('/api/admin/profiles/:id', async (req, res) => {
+  try {
+    const profile = await Profile.findByIdAndUpdate(
+      req.params.id,
+      { $set: { isDeleted: true } },
+      { new: true }
+    );
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Profile not found' });
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Admin delete profile error:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -705,7 +742,7 @@ app.get('/api/admin/orders', async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
     const skip = (page - 1) * limit;
 
-    const matchStage = { status: 'paid', active: { $ne: false } };
+    const matchStage = { status: 'paid', active: { $ne: false }, isDeleted: { $ne: true } };
 
     if (req.query.source) matchStage.source = req.query.source;
 
@@ -802,15 +839,15 @@ app.get('/api/admin/dashboard', async (_req, res) => {
 
     const [todayPayments, allTimePayments, todayProfiles, allTimeProfiles] = await Promise.all([
       Payment.aggregate([
-        { $match: { status: 'paid', timestamp: { $gte: todayStart } } },
+        { $match: { status: 'paid', isDeleted: { $ne: true }, timestamp: { $gte: todayStart } } },
         { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 } } },
       ]),
       Payment.aggregate([
-        { $match: { status: 'paid' } },
+        { $match: { status: 'paid', isDeleted: { $ne: true } } },
         { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 } } },
       ]),
-      Profile.countDocuments({ timestamp: { $gte: todayStart } }),
-      Profile.countDocuments(),
+      Profile.countDocuments({ isDeleted: { $ne: true }, timestamp: { $gte: todayStart } }),
+      Profile.countDocuments({ isDeleted: { $ne: true } }),
     ]);
 
     res.json({
@@ -839,7 +876,7 @@ app.get('/api/admin/payments', async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
     const skip = (page - 1) * limit;
 
-    const filter = {};
+    const filter = { isDeleted: { $ne: true } };
     if (req.query.status) filter.status = req.query.status;
     if (req.query.source) filter.source = req.query.source;
     if (req.query.dateFrom || req.query.dateTo) {
@@ -922,7 +959,7 @@ app.get('/api/admin/profiles', async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
     const skip = (page - 1) * limit;
 
-    const filter = {};
+    const filter = { isDeleted: { $ne: true } };
     if (req.query.gender) filter.gender = req.query.gender;
     if (req.query.source) filter.source = req.query.source;
     if (req.query.city) filter.city = { $regex: `^${req.query.city}$`, $options: 'i' };
@@ -970,7 +1007,7 @@ app.get('/api/admin/payments/trends', async (req, res) => {
     startDate.setHours(0, 0, 0, 0);
 
     const trends = await Payment.aggregate([
-      { $match: { timestamp: { $gte: startDate } } },
+      { $match: { isDeleted: { $ne: true }, timestamp: { $gte: startDate } } },
       {
         $group: {
           _id: {
@@ -1023,7 +1060,7 @@ app.get('/api/admin/profiles/trends', async (req, res) => {
     startDate.setHours(0, 0, 0, 0);
 
     const trends = await Profile.aggregate([
-      { $match: { timestamp: { $gte: startDate } } },
+      { $match: { isDeleted: { $ne: true }, timestamp: { $gte: startDate } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
@@ -1055,11 +1092,12 @@ app.get('/api/admin/profiles/trends', async (req, res) => {
 // Profile facets (distinct values for filter dropdowns)
 app.get('/api/admin/profiles/facets', async (_req, res) => {
   try {
+    const notDeleted = { isDeleted: { $ne: true } };
     const [genders, cities, states, occupations] = await Promise.all([
-      Profile.distinct('gender').then(v => v.filter(Boolean).sort()),
-      Profile.distinct('city').then(v => v.filter(Boolean).sort()),
-      Profile.distinct('state').then(v => v.filter(Boolean).sort()),
-      Profile.distinct('occupation').then(v => v.filter(Boolean).sort()),
+      Profile.distinct('gender', notDeleted).then(v => v.filter(Boolean).sort()),
+      Profile.distinct('city', notDeleted).then(v => v.filter(Boolean).sort()),
+      Profile.distinct('state', notDeleted).then(v => v.filter(Boolean).sort()),
+      Profile.distinct('occupation', notDeleted).then(v => v.filter(Boolean).sort()),
     ]);
 
     res.json({ success: true, genders, cities, states, occupations });
