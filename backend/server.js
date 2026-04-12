@@ -6,14 +6,32 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+// ── Meta credentials ───────────────────────────────────────
+const META_PIXEL_ID = '1627603605217493';
+const META_ACCESS_TOKEN = 'EAASQRFhMkIoBRH5qOFxLERc4EIuDQdWUwuh8rGk4x2sNdqUIZAKlOZA3ZBcEf5Dqp27396dhNqNM1seFvftjWZAgFsCKUjlZBCu1ZBaM3w8LOnfwY4ZCYkg4ZAwbEWIqnFXUjVjkyNkyK6x5gT3Vn6vvEj7ZBYAJtYi5GsqxrqTdwxBJPypNwrre2QAOeXVMEZCrEVpgZDZD';
+const META_AD_ACCOUNT_ID = '2526677564455677';
+
+// ── Meta Ads in-memory cache ────────────────────────────────
+const metaAdsCache = new Map();
+const META_ADS_CACHE_TTL = 15 * 60 * 1000;
+function getMetaAdsCache(key) {
+  const entry = metaAdsCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > META_ADS_CACHE_TTL) { metaAdsCache.delete(key); return null; }
+  return entry.data;
+}
+function setMetaAdsCache(key, data) {
+  metaAdsCache.set(key, { ts: Date.now(), data });
+}
+
 // ── Meta CAPI helpers ──────────────────────────────────────
 function sha256(value) {
   return crypto.createHash('sha256').update(value.trim().toLowerCase()).digest('hex');
 }
 
 async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sourceUrl, clientIp, userAgent }) {
-  const pixelId = '1627603605217493';
-  const accessToken = 'EAASQRFhMkIoBRH5qOFxLERc4EIuDQdWUwuh8rGk4x2sNdqUIZAKlOZA3ZBcEf5Dqp27396dhNqNM1seFvftjWZAgFsCKUjlZBCu1ZBaM3w8LOnfwY4ZCYkg4ZAwbEWIqnFXUjVjkyNkyK6x5gT3Vn6vvEj7ZBYAJtYi5GsqxrqTdwxBJPypNwrre2QAOeXVMEZCrEVpgZDZD';
+  const pixelId = META_PIXEL_ID;
+  const accessToken = META_ACCESS_TOKEN;
 
   const payload = {
     data: [{
@@ -1104,6 +1122,106 @@ app.get('/api/admin/profiles/facets', async (_req, res) => {
   } catch (error) {
     console.error('Admin facets error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch facets' });
+  }
+});
+
+// ── Meta Ads: campaign summary ─────────────────────────────
+app.get('/api/admin/meta-ads/summary', async (req, res) => {
+  try {
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
+    const cacheKey = `summary_${days}`;
+    const cached = getMetaAdsCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const until = new Date();
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceStr = since.toISOString().slice(0, 10);
+    const untilStr = until.toISOString().slice(0, 10);
+
+    const params = new URLSearchParams({
+      fields: 'campaign_name,campaign_id,spend,impressions,clicks,reach,cpm,cpc,ctr,actions',
+      level: 'campaign',
+      time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
+      access_token: META_ACCESS_TOKEN,
+    });
+
+    const url = `https://graph.facebook.com/v19.0/act_${META_AD_ACCOUNT_ID}/insights?${params}`;
+    const metaRes = await fetch(url);
+    const metaJson = await metaRes.json();
+
+    if (metaJson.error) {
+      console.error('Meta Ads API error:', metaJson.error);
+      return res.status(502).json({ success: false, message: metaJson.error.message });
+    }
+
+    const campaigns = (metaJson.data || []).map(c => {
+      const purchaseAction = (c.actions || []).find(a => a.action_type === 'purchase');
+      return {
+        campaignId: c.campaign_id,
+        campaignName: c.campaign_name,
+        spend: parseFloat(c.spend || 0),
+        impressions: parseInt(c.impressions || 0),
+        clicks: parseInt(c.clicks || 0),
+        reach: parseInt(c.reach || 0),
+        cpm: parseFloat(c.cpm || 0),
+        cpc: parseFloat(c.cpc || 0),
+        ctr: parseFloat(c.ctr || 0),
+        purchases: purchaseAction ? parseInt(purchaseAction.value || 0) : 0,
+      };
+    });
+
+    const totalSpend = campaigns.reduce((s, c) => s + c.spend, 0);
+    const result = { success: true, totalSpend, campaigns };
+    setMetaAdsCache(cacheKey, result);
+    res.json(result);
+  } catch (error) {
+    console.error('Meta Ads summary error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch Meta Ads data' });
+  }
+});
+
+// ── Meta Ads: daily spend ──────────────────────────────────
+app.get('/api/admin/meta-ads/daily', async (req, res) => {
+  try {
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
+    const cacheKey = `daily_${days}`;
+    const cached = getMetaAdsCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const until = new Date();
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceStr = since.toISOString().slice(0, 10);
+    const untilStr = until.toISOString().slice(0, 10);
+
+    const params = new URLSearchParams({
+      fields: 'spend,date_start',
+      time_increment: '1',
+      time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
+      access_token: META_ACCESS_TOKEN,
+    });
+
+    const url = `https://graph.facebook.com/v19.0/act_${META_AD_ACCOUNT_ID}/insights?${params}`;
+    const metaRes = await fetch(url);
+    const metaJson = await metaRes.json();
+
+    if (metaJson.error) {
+      console.error('Meta Ads API error:', metaJson.error);
+      return res.status(502).json({ success: false, message: metaJson.error.message });
+    }
+
+    const daily = (metaJson.data || []).map(d => ({
+      date: d.date_start,
+      spend: parseFloat(d.spend || 0),
+    }));
+
+    const result = { success: true, daily };
+    setMetaAdsCache(cacheKey, result);
+    res.json(result);
+  } catch (error) {
+    console.error('Meta Ads daily error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch Meta Ads daily data' });
   }
 });
 
