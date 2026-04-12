@@ -1129,19 +1129,25 @@ app.get('/api/admin/profiles/facets', async (_req, res) => {
 // ── Meta Ads: campaign summary ─────────────────────────────
 app.get('/api/admin/meta-ads/summary', async (req, res) => {
   try {
-    const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
-    const cacheKey = `summary_${days}`;
+    const dateFrom = req.query.dateFrom;
+    const dateTo = req.query.dateTo;
+    let sinceStr, untilStr;
+    if (dateFrom && dateTo) {
+      sinceStr = dateFrom;
+      untilStr = dateTo;
+    } else {
+      const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      sinceStr = since.toISOString().slice(0, 10);
+      untilStr = new Date().toISOString().slice(0, 10);
+    }
+    const cacheKey = `summary_${sinceStr}_${untilStr}`;
     const cached = getMetaAdsCache(cacheKey);
     if (cached) return res.json(cached);
 
-    const until = new Date();
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    const sinceStr = since.toISOString().slice(0, 10);
-    const untilStr = until.toISOString().slice(0, 10);
-
     const params = new URLSearchParams({
-      fields: 'campaign_name,campaign_id,spend,impressions,clicks,reach,cpm,cpc,ctr,actions',
+      fields: 'campaign_name,campaign_id,spend,impressions,clicks,reach,cpm,cpc,ctr,frequency,inline_link_clicks,actions',
       level: 'campaign',
       time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
       access_token: META_MARKETING_TOKEN,
@@ -1158,17 +1164,22 @@ app.get('/api/admin/meta-ads/summary', async (req, res) => {
 
     const campaigns = (metaJson.data || []).map(c => {
       const purchaseAction = (c.actions || []).find(a => a.action_type === 'purchase');
+      const spend = parseFloat(c.spend || 0);
+      const purchases = purchaseAction ? parseInt(purchaseAction.value || 0) : 0;
       return {
         campaignId: c.campaign_id,
         campaignName: c.campaign_name,
-        spend: parseFloat(c.spend || 0),
+        spend,
         impressions: parseInt(c.impressions || 0),
         clicks: parseInt(c.clicks || 0),
         reach: parseInt(c.reach || 0),
         cpm: parseFloat(c.cpm || 0),
         cpc: parseFloat(c.cpc || 0),
         ctr: parseFloat(c.ctr || 0),
-        purchases: purchaseAction ? parseInt(purchaseAction.value || 0) : 0,
+        frequency: parseFloat(c.frequency || 0),
+        linkClicks: parseInt(c.inline_link_clicks || 0),
+        purchases,
+        costPerPurchase: purchases > 0 ? spend / purchases : 0,
       };
     });
 
@@ -1185,16 +1196,22 @@ app.get('/api/admin/meta-ads/summary', async (req, res) => {
 // ── Meta Ads: daily spend ──────────────────────────────────
 app.get('/api/admin/meta-ads/daily', async (req, res) => {
   try {
-    const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
-    const cacheKey = `daily_${days}`;
+    const dateFrom = req.query.dateFrom;
+    const dateTo = req.query.dateTo;
+    let sinceStr, untilStr;
+    if (dateFrom && dateTo) {
+      sinceStr = dateFrom;
+      untilStr = dateTo;
+    } else {
+      const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      sinceStr = since.toISOString().slice(0, 10);
+      untilStr = new Date().toISOString().slice(0, 10);
+    }
+    const cacheKey = `daily_${sinceStr}_${untilStr}`;
     const cached = getMetaAdsCache(cacheKey);
     if (cached) return res.json(cached);
-
-    const until = new Date();
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    const sinceStr = since.toISOString().slice(0, 10);
-    const untilStr = until.toISOString().slice(0, 10);
 
     const params = new URLSearchParams({
       fields: 'spend,date_start',
@@ -1223,6 +1240,166 @@ app.get('/api/admin/meta-ads/daily', async (req, res) => {
   } catch (error) {
     console.error('Meta Ads daily error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch Meta Ads daily data' });
+  }
+});
+
+// ── Meta Ads: adsets for a campaign ───────────────────────
+app.get('/api/admin/meta-ads/campaign/:campaignId/adsets', async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+    const dateFrom = req.query.dateFrom;
+    const dateTo = req.query.dateTo;
+    let sinceStr, untilStr;
+    if (dateFrom && dateTo) {
+      sinceStr = dateFrom;
+      untilStr = dateTo;
+    } else {
+      const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      sinceStr = since.toISOString().slice(0, 10);
+      untilStr = new Date().toISOString().slice(0, 10);
+    }
+    const cacheKey = `adsets_${campaignId}_${sinceStr}_${untilStr}`;
+    const cached = getMetaAdsCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const params = new URLSearchParams({
+      fields: 'adset_id,adset_name,campaign_id,spend,impressions,clicks,reach,cpm,cpc,ctr,frequency,inline_link_clicks,actions',
+      level: 'adset',
+      filtering: JSON.stringify([{ field: 'campaign.id', operator: 'EQUAL', value: campaignId }]),
+      time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
+      access_token: META_MARKETING_TOKEN,
+    });
+
+    const url = `https://graph.facebook.com/v19.0/act_${META_AD_ACCOUNT_ID}/insights?${params}`;
+    const metaRes = await fetch(url);
+    const metaJson = await metaRes.json();
+
+    if (metaJson.error) {
+      console.error('Meta Ads API error:', metaJson.error);
+      return res.status(502).json({ success: false, message: metaJson.error.message });
+    }
+
+    const adsets = (metaJson.data || []).map(a => {
+      const purchaseAction = (a.actions || []).find(x => x.action_type === 'purchase');
+      const spend = parseFloat(a.spend || 0);
+      const purchases = purchaseAction ? parseInt(purchaseAction.value || 0) : 0;
+      return {
+        adsetId: a.adset_id,
+        adsetName: a.adset_name,
+        campaignId: a.campaign_id,
+        spend,
+        impressions: parseInt(a.impressions || 0),
+        clicks: parseInt(a.clicks || 0),
+        reach: parseInt(a.reach || 0),
+        cpm: parseFloat(a.cpm || 0),
+        cpc: parseFloat(a.cpc || 0),
+        ctr: parseFloat(a.ctr || 0),
+        frequency: parseFloat(a.frequency || 0),
+        linkClicks: parseInt(a.inline_link_clicks || 0),
+        purchases,
+        costPerPurchase: purchases > 0 ? spend / purchases : 0,
+      };
+    });
+
+    const totalSpend = adsets.reduce((s, a) => s + a.spend, 0);
+    const result = { success: true, totalSpend, adsets };
+    setMetaAdsCache(cacheKey, result);
+    res.json(result);
+  } catch (error) {
+    console.error('Meta Ads adsets error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch adsets data' });
+  }
+});
+
+// ── Meta Ads: ads for an adset (with creatives) ────────────
+app.get('/api/admin/meta-ads/adset/:adsetId/ads', async (req, res) => {
+  try {
+    const { adsetId } = req.params;
+    const dateFrom = req.query.dateFrom;
+    const dateTo = req.query.dateTo;
+    let sinceStr, untilStr;
+    if (dateFrom && dateTo) {
+      sinceStr = dateFrom;
+      untilStr = dateTo;
+    } else {
+      const days = Math.min(90, Math.max(1, parseInt(req.query.days) || 30));
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      sinceStr = since.toISOString().slice(0, 10);
+      untilStr = new Date().toISOString().slice(0, 10);
+    }
+    const cacheKey = `ads_${adsetId}_${sinceStr}_${untilStr}`;
+    const cached = getMetaAdsCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    // Fetch insights
+    const insightsParams = new URLSearchParams({
+      fields: 'ad_id,ad_name,adset_id,spend,impressions,clicks,reach,cpm,cpc,ctr,frequency,inline_link_clicks,actions',
+      level: 'ad',
+      filtering: JSON.stringify([{ field: 'adset.id', operator: 'EQUAL', value: adsetId }]),
+      time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
+      access_token: META_MARKETING_TOKEN,
+    });
+    const insightsUrl = `https://graph.facebook.com/v19.0/act_${META_AD_ACCOUNT_ID}/insights?${insightsParams}`;
+    const insightsRes = await fetch(insightsUrl);
+    const insightsJson = await insightsRes.json();
+
+    if (insightsJson.error) {
+      console.error('Meta Ads API error:', insightsJson.error);
+      return res.status(502).json({ success: false, message: insightsJson.error.message });
+    }
+
+    // Fetch creative info
+    const creativeParams = new URLSearchParams({
+      fields: 'id,name,creative{thumbnail_url,title,body}',
+      filtering: JSON.stringify([{ field: 'adset.id', operator: 'EQUAL', value: adsetId }]),
+      access_token: META_MARKETING_TOKEN,
+    });
+    const creativeUrl = `https://graph.facebook.com/v19.0/act_${META_AD_ACCOUNT_ID}/ads?${creativeParams}`;
+    const creativeRes = await fetch(creativeUrl);
+    const creativeJson = await creativeRes.json();
+
+    // Build creative map by ad id
+    const creativeMap = {};
+    for (const ad of (creativeJson.data || [])) {
+      creativeMap[ad.id] = ad.creative || {};
+    }
+
+    const ads = (insightsJson.data || []).map(a => {
+      const purchaseAction = (a.actions || []).find(x => x.action_type === 'purchase');
+      const spend = parseFloat(a.spend || 0);
+      const purchases = purchaseAction ? parseInt(purchaseAction.value || 0) : 0;
+      const creative = creativeMap[a.ad_id] || {};
+      return {
+        adId: a.ad_id,
+        adName: a.ad_name,
+        adsetId: a.adset_id,
+        spend,
+        impressions: parseInt(a.impressions || 0),
+        clicks: parseInt(a.clicks || 0),
+        reach: parseInt(a.reach || 0),
+        cpm: parseFloat(a.cpm || 0),
+        cpc: parseFloat(a.cpc || 0),
+        ctr: parseFloat(a.ctr || 0),
+        frequency: parseFloat(a.frequency || 0),
+        linkClicks: parseInt(a.inline_link_clicks || 0),
+        purchases,
+        costPerPurchase: purchases > 0 ? spend / purchases : 0,
+        thumbnailUrl: creative.thumbnail_url || null,
+        title: creative.title || null,
+        body: creative.body || null,
+      };
+    });
+
+    const totalSpend = ads.reduce((s, a) => s + a.spend, 0);
+    const result = { success: true, totalSpend, ads };
+    setMetaAdsCache(cacheKey, result);
+    res.json(result);
+  } catch (error) {
+    console.error('Meta Ads ads error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch ads data' });
   }
 });
 
