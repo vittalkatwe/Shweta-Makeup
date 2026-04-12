@@ -114,6 +114,8 @@ const profileSchema = new mongoose.Schema({
   coursePurchasePrice: { type: Number },
   courseName:          { type: String },
 
+  source: { type: String, enum: ['website', 'whatsapp'], default: 'website' },
+
   timestamp: { type: Date, default: Date.now },
 });
 
@@ -1060,6 +1062,41 @@ app.get('/api/admin/profiles/facets', async (_req, res) => {
   } catch (error) {
     console.error('Admin facets error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch facets' });
+  }
+});
+
+// ============================================================
+// ADMIN: Sync source field from Payments → Profiles
+// POST /api/admin/sync-source
+// ============================================================
+app.post('/api/admin/sync-source', async (req, res) => {
+  try {
+    const paidPayments = await Payment.find(
+      { status: 'paid', source: { $exists: true, $ne: null } },
+      { razorpayOrderId: 1, source: 1 }
+    ).lean();
+
+    if (!paidPayments.length) {
+      return res.json({ updated: 0, skipped: 0, total: 0 });
+    }
+
+    const ops = paidPayments
+      .filter(p => p.razorpayOrderId)
+      .map(p => ({
+        updateOne: {
+          filter: { razorpayOrderId: p.razorpayOrderId },
+          update: { $set: { source: p.source } },
+        },
+      }));
+
+    const result = await Profile.bulkWrite(ops, { ordered: false });
+    const updated = result.modifiedCount + result.upsertedCount;
+    const skipped = ops.length - updated;
+
+    res.json({ updated, skipped, total: paidPayments.length });
+  } catch (err) {
+    console.error('sync-source error', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
