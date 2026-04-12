@@ -615,7 +615,7 @@ app.get('/api/profiles', async (req, res) => {
 // ============================================================
 app.post('/api/admin/orders', async (req, res) => {
   try {
-    const { name, phone, amount, source, whatsappPhone, remark, timestamp, email, gender, city, state, occupation } = req.body;
+    const { name, phone, amount, source, whatsappPhone, remark, timestamp, email, gender, city, state, occupation, skipProfile } = req.body;
 
     if (!phone || !amount) {
       return res.status(400).json({ success: false, message: 'Phone and amount are required' });
@@ -635,23 +635,25 @@ app.post('/api/admin/orders', async (req, res) => {
 
     await payment.save();
 
-    // Also create a profile record
-    await Profile.create({
-      razorpayOrderId: null,
-      name: name || null,
-      email: email || null,
-      phone,
-      whatsappPhone: whatsappPhone || phone,
-      gender: gender || undefined,
-      city: city || undefined,
-      state: state || undefined,
-      occupation: occupation || undefined,
-      source: source || 'whatsapp',
-      hasPurchasedCourse: true,
-      coursePurchasePrice: amount,
-      courseName: '3-Day Hairstyle Masterclass',
-      timestamp: payment.timestamp,
-    });
+    if (!skipProfile) {
+      // Also create a profile record
+      await Profile.create({
+        razorpayOrderId: null,
+        name: name || null,
+        email: email || null,
+        phone,
+        whatsappPhone: whatsappPhone || phone,
+        gender: gender || undefined,
+        city: city || undefined,
+        state: state || undefined,
+        occupation: occupation || undefined,
+        source: source || 'whatsapp',
+        hasPurchasedCourse: true,
+        coursePurchasePrice: amount,
+        courseName: '3-Day Hairstyle Masterclass',
+        timestamp: payment.timestamp,
+      });
+    }
 
     return res.json({ success: true, payment });
   } catch (error) {
@@ -767,12 +769,8 @@ app.get('/api/admin/orders', async (req, res) => {
 
     if (req.query.dateFrom || req.query.dateTo) {
       matchStage.timestamp = {};
-      if (req.query.dateFrom) matchStage.timestamp.$gte = new Date(req.query.dateFrom);
-      if (req.query.dateTo) {
-        const to = new Date(req.query.dateTo);
-        to.setHours(23, 59, 59, 999);
-        matchStage.timestamp.$lte = to;
-      }
+      if (req.query.dateFrom) matchStage.timestamp.$gte = new Date(req.query.dateFrom + 'T00:00:00+05:30');
+      if (req.query.dateTo) matchStage.timestamp.$lte = new Date(req.query.dateTo + 'T23:59:59.999+05:30');
     }
 
     if (req.query.search) {
@@ -900,12 +898,8 @@ app.get('/api/admin/payments', async (req, res) => {
     if (req.query.source) filter.source = req.query.source;
     if (req.query.dateFrom || req.query.dateTo) {
       filter.timestamp = {};
-      if (req.query.dateFrom) filter.timestamp.$gte = new Date(req.query.dateFrom);
-      if (req.query.dateTo) {
-        const to = new Date(req.query.dateTo);
-        to.setHours(23, 59, 59, 999);
-        filter.timestamp.$lte = to;
-      }
+      if (req.query.dateFrom) filter.timestamp.$gte = new Date(req.query.dateFrom + 'T00:00:00+05:30');
+      if (req.query.dateTo) filter.timestamp.$lte = new Date(req.query.dateTo + 'T23:59:59.999+05:30');
     }
     const nameSearch = req.query.search ? req.query.search.trim() : null;
     if (nameSearch) {
@@ -989,12 +983,8 @@ app.get('/api/admin/profiles', async (req, res) => {
     }
     if (req.query.dateFrom || req.query.dateTo) {
       filter.timestamp = {};
-      if (req.query.dateFrom) filter.timestamp.$gte = new Date(req.query.dateFrom);
-      if (req.query.dateTo) {
-        const to = new Date(req.query.dateTo);
-        to.setHours(23, 59, 59, 999);
-        filter.timestamp.$lte = to;
-      }
+      if (req.query.dateFrom) filter.timestamp.$gte = new Date(req.query.dateFrom + 'T00:00:00+05:30');
+      if (req.query.dateTo) filter.timestamp.$lte = new Date(req.query.dateTo + 'T23:59:59.999+05:30');
     }
     if (req.query.search) {
       const s = req.query.search.trim();
@@ -1021,16 +1011,20 @@ app.get('/api/admin/profiles', async (req, res) => {
 app.get('/api/admin/payments/trends', async (req, res) => {
   try {
     const days = Math.min(365, Math.max(1, parseInt(req.query.days) || 30));
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
+    const IST_OFFSET = 330 * 60 * 1000; // UTC+5:30 in ms
+    // Compute IST midnight 'days' days ago, then convert back to UTC for the DB query
+    const nowIST = new Date(Date.now() + IST_OFFSET);
+    const startIST = new Date(nowIST);
+    startIST.setUTCDate(startIST.getUTCDate() - days);
+    startIST.setUTCHours(0, 0, 0, 0);
+    const startDate = new Date(startIST.getTime() - IST_OFFSET);
 
     const trends = await Payment.aggregate([
       { $match: { isDeleted: { $ne: true }, timestamp: { $gte: startDate } } },
       {
         $group: {
           _id: {
-            date: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp', timezone: 'Asia/Kolkata' } },
             status: '$status',
           },
           count: { $sum: 1 },
@@ -1053,12 +1047,12 @@ app.get('/api/admin/payments/trends', async (req, res) => {
       }
     }
 
-    // Fill missing days
+    // Fill missing days (iterate in IST date space)
     const result = [];
     const current = new Date(startDate);
     const now = new Date();
     while (current <= now) {
-      const key = current.toISOString().slice(0, 10);
+      const key = new Date(current.getTime() + IST_OFFSET).toISOString().slice(0, 10);
       result.push(byDate[key] || { date: key, revenue: 0, orders: 0, failed: 0 });
       current.setDate(current.getDate() + 1);
     }
@@ -1074,15 +1068,18 @@ app.get('/api/admin/payments/trends', async (req, res) => {
 app.get('/api/admin/profiles/trends', async (req, res) => {
   try {
     const days = Math.min(365, Math.max(1, parseInt(req.query.days) || 30));
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
+    const IST_OFFSET = 330 * 60 * 1000; // UTC+5:30 in ms
+    const nowIST = new Date(Date.now() + IST_OFFSET);
+    const startIST = new Date(nowIST);
+    startIST.setUTCDate(startIST.getUTCDate() - days);
+    startIST.setUTCHours(0, 0, 0, 0);
+    const startDate = new Date(startIST.getTime() - IST_OFFSET);
 
     const trends = await Profile.aggregate([
       { $match: { isDeleted: { $ne: true }, timestamp: { $gte: startDate } } },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp', timezone: 'Asia/Kolkata' } },
           count: { $sum: 1 },
         },
       },
@@ -1096,7 +1093,7 @@ app.get('/api/admin/profiles/trends', async (req, res) => {
     const current = new Date(startDate);
     const now = new Date();
     while (current <= now) {
-      const key = current.toISOString().slice(0, 10);
+      const key = new Date(current.getTime() + IST_OFFSET).toISOString().slice(0, 10);
       result.push({ date: key, count: byDate[key] || 0 });
       current.setDate(current.getDate() + 1);
     }
