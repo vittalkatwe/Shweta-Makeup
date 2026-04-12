@@ -724,6 +724,8 @@ app.get('/api/admin/orders', async (req, res) => {
       ];
     }
 
+    if (req.query.amount) matchStage.amount = parseInt(req.query.amount, 10);
+
     const postMatchStage = {};
     if (req.query.gender) postMatchStage['gender'] = req.query.gender;
     if (req.query.state) postMatchStage['state'] = { $regex: `^${req.query.state}$`, $options: 'i' };
