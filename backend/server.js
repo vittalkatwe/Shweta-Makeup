@@ -763,17 +763,21 @@ app.get('/api/admin/orders', async (req, res) => {
       { $sort: { timestamp: -1 } },
     ];
 
-    const [allOrders, countResult] = await Promise.all([
+    const [allOrders, countResult, revenueResult] = await Promise.all([
       Payment.aggregate([...pipeline, { $skip: skip }, { $limit: limit }]),
       Payment.aggregate([...pipeline, { $count: 'total' }]),
+      Payment.aggregate([...pipeline, { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }]),
     ]);
 
     const total = countResult[0]?.total || 0;
+    const totalRevenue = revenueResult[0]?.totalRevenue || 0;
 
     res.json({
       success: true,
       orders: allOrders,
       total,
+      totalRevenue,
+      avgOrderValue: total > 0 ? totalRevenue / total : 0,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
