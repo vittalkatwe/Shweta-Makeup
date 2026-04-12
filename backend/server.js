@@ -707,6 +707,8 @@ app.get('/api/admin/orders', async (req, res) => {
 
     const matchStage = { status: 'paid', active: { $ne: false } };
 
+    if (req.query.source) matchStage.source = req.query.source;
+
     if (req.query.dateFrom || req.query.dateTo) {
       matchStage.timestamp = {};
       if (req.query.dateFrom) matchStage.timestamp.$gte = new Date(req.query.dateFrom);
@@ -839,6 +841,7 @@ app.get('/api/admin/payments', async (req, res) => {
 
     const filter = {};
     if (req.query.status) filter.status = req.query.status;
+    if (req.query.source) filter.source = req.query.source;
     if (req.query.dateFrom || req.query.dateTo) {
       filter.timestamp = {};
       if (req.query.dateFrom) filter.timestamp.$gte = new Date(req.query.dateFrom);
@@ -921,6 +924,7 @@ app.get('/api/admin/profiles', async (req, res) => {
 
     const filter = {};
     if (req.query.gender) filter.gender = req.query.gender;
+    if (req.query.source) filter.source = req.query.source;
     if (req.query.city) filter.city = { $regex: `^${req.query.city}$`, $options: 'i' };
     if (req.query.state) filter.state = { $regex: `^${req.query.state}$`, $options: 'i' };
     if (req.query.occupation) filter.occupation = req.query.occupation;
