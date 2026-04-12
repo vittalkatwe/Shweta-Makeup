@@ -9,6 +9,7 @@ require('dotenv').config();
 // ── Meta credentials ───────────────────────────────────────
 const META_PIXEL_ID = '1627603605217493';
 const META_ACCESS_TOKEN = 'EAASQRFhMkIoBRH5qOFxLERc4EIuDQdWUwuh8rGk4x2sNdqUIZAKlOZA3ZBcEf5Dqp27396dhNqNM1seFvftjWZAgFsCKUjlZBCu1ZBaM3w8LOnfwY4ZCYkg4ZAwbEWIqnFXUjVjkyNkyK6x5gT3Vn6vvEj7ZBYAJtYi5GsqxrqTdwxBJPypNwrre2QAOeXVMEZCrEVpgZDZD';
+const META_MARKETING_TOKEN = 'EAAgLzVawCpMBRNbNhfCfzZA4AOYMLVoXjE5QW7E6ZCW4CKI6Tki6SYXRVLHZA722XZB0VFJS65DL5rePCy5naxuHy7OsLEMGznBBOWbVCUaOZC5ysUfLYhQPg6vDIiIVYS2aCqQOU4sLGyC6N2MqWPMQlAzWj4lZAPvSjWbQTDVCrkZB64ZCrKzjnpWnA6mYYYCpgl0u';
 const META_AD_ACCOUNT_ID = '2526677564455677';
 
 // ── Meta Ads in-memory cache ────────────────────────────────
@@ -1143,7 +1144,7 @@ app.get('/api/admin/meta-ads/summary', async (req, res) => {
       fields: 'campaign_name,campaign_id,spend,impressions,clicks,reach,cpm,cpc,ctr,actions',
       level: 'campaign',
       time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
-      access_token: META_ACCESS_TOKEN,
+      access_token: META_MARKETING_TOKEN,
     });
 
     const url = `https://graph.facebook.com/v19.0/act_${META_AD_ACCOUNT_ID}/insights?${params}`;
@@ -1199,7 +1200,7 @@ app.get('/api/admin/meta-ads/daily', async (req, res) => {
       fields: 'spend,date_start',
       time_increment: '1',
       time_range: JSON.stringify({ since: sinceStr, until: untilStr }),
-      access_token: META_ACCESS_TOKEN,
+      access_token: META_MARKETING_TOKEN,
     });
 
     const url = `https://graph.facebook.com/v19.0/act_${META_AD_ACCOUNT_ID}/insights?${params}`;
