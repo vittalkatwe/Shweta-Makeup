@@ -68,7 +68,7 @@ export default function OrderConfirm({ paymentData = {}, profileData = {}, cours
 
   const items = [
     { icon: '🎓', label: 'Course Access', value: 'Hairstyle Masterclass' },
-    { icon: '📅', label: 'Dates', value: '13th, 14th & 15th April' },
+    { icon: '📅', label: 'Dates', value: '18th, 19th & 20th April' },
     { icon: '🕐', label: 'Timings', value: '12 PM – 4 PM' },
     { icon: '📹', label: 'Recording', value: 'Full class video included' },
   ]
