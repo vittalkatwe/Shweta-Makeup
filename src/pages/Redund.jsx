@@ -215,7 +215,7 @@ export default function Refund() {
         </div>
 
         <div className="lp-footer">
-          © 2026 Shweta Kapoor &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms">Terms of Use</a> &nbsp;·&nbsp; <a href="/refund">Refund Policy</a>
+          © 2026 Shweta Kapoor &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms">Terms of Use</a> &nbsp;·&nbsp; <a href="/refund">Refund Policy</a> &nbsp;·&nbsp; <a href="/contact">Contact</a>
         </div>
       </div>
     </>

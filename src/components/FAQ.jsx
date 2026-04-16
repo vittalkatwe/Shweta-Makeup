@@ -56,8 +56,9 @@ export default function FAQ() {
 
         <div className="faq-footer-links">
           <a href="/terms">Terms of Use</a>
-          <a href="/refund">Refund</a>
+          <a href="/refund">Refund Policy</a>
           <a href="/privacy">Privacy Policy</a>
+          <a href="/contact">Contact</a>
         </div>
       </div>
     </section>

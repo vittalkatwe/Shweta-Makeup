@@ -21,6 +21,7 @@ import PaymentPage from './pages/PaymentPage.jsx'
 import Refund from './pages/Redund.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsOfUse from './pages/TermsOfUse.jsx'
+import Contact from './pages/Contact.jsx'
 
 function HomePage() {
   const { coursePrice, urgencyVariant } = usePrice()
@@ -139,6 +140,8 @@ function AppGate() {
       <Route path="/refund" element={<Refund />} />
       <Route path="/terms" element={<TermsOfUse />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/contact" element={<Contact />} />
+
     </Routes>
   )
 }
