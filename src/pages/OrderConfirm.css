@@ -231,7 +231,7 @@
   animation: oc-fade 0.5s ease 0.85s both;
 }
 .oc-footer-note a {
-  color: #c8702a;
+  color: #fff;
   text-decoration: none;
   font-weight: 500;
 }
@@ -241,4 +241,26 @@
 @media (max-width: 560px) {
   .oc-card { padding: 36px 24px; }
   .oc-heading { font-size: 28px; }
+}
+
+.oc-wa-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px auto 0;
+  padding: 14px 28px;
+  background: #25d366;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+  width: fit-content;
+}
+
+.oc-wa-btn:hover {
+  background: #1ebe5a;
+  transform: translateY(-1px);
 }
