@@ -7,7 +7,7 @@ import { usePrice } from '../hooks/usePrice'
 
 export default function OrderConfirm({ paymentData = {}, profileData = {}, courseAmount }) {
   const canvasRef = useRef(null)
-  const { urgencyVariant } = usePrice()
+  const { urgencyVariant, courseDates } = usePrice()
 
   useEffect(() => {
     clevertap.event.push('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone })
@@ -68,7 +68,7 @@ export default function OrderConfirm({ paymentData = {}, profileData = {}, cours
 
   const items = [
     { icon: '🎓', label: 'Course Access', value: 'Hairstyle Masterclass' },
-    { icon: '📅', label: 'Dates', value: '25, 26 & 27 April' },
+    { icon: '📅', label: 'Dates', value: courseDates },
     { icon: '🕐', label: 'Timings', value: '12 PM – 4 PM' },
     { icon: '📹', label: 'Recording', value: 'Full class video included' },
   ]
