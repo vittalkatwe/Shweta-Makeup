@@ -45,8 +45,11 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
         ph: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
         em: userData.email ? sha256(userData.email) : undefined,
         fn: userData.name ? sha256(userData.name.split(' ')[0]) : null,
-        client_ip_address: clientIp,
-        client_user_agent: userAgent,
+        external_id: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
+        fbc: userData.fbc || undefined,
+        fbp: userData.fbp || undefined,
+        client_ip_address: clientIp || undefined,
+        client_user_agent: userAgent || undefined,
       },
       custom_data: customData,
     }],
@@ -106,6 +109,10 @@ const paymentSchema = new mongoose.Schema({
   remark:  { type: String, default: null },
   active:  { type: Boolean, default: true },
   isDeleted: { type: Boolean, default: false },
+  fbc:       { type: String, default: null },
+  fbp:       { type: String, default: null },
+  clientIp:  { type: String, default: null },
+  userAgent: { type: String, default: null },
 });
 
 paymentSchema.index({ timestamp: -1 });
@@ -239,7 +246,7 @@ const sendConfirmationEmail = async (payment) => {
 // ============================================================
 app.post('/api/create-order', async (req, res) => {
   try {
-    const { name, email, phone, amount } = req.body;
+    const { name, email, phone, amount, fbc, fbp } = req.body;
 
     if (!phone) {
       return res.status(400).json({ success: false, message: 'Phone are required' });
@@ -255,6 +262,10 @@ app.post('/api/create-order', async (req, res) => {
       amount: AMOUNT_INR,
       currency: 'INR',
       status: 'pending',
+      fbc: fbc || null,
+      fbp: fbp || null,
+      clientIp: req.headers['x-forwarded-for'] || req.ip || null,
+      userAgent: req.headers['user-agent'] || null,
     });
 
     await payment.save();
@@ -390,11 +401,11 @@ app.post('/api/verify-payment', async (req, res) => {
     await sendMetaCAPIEvent({
       eventName: 'Purchase',
       eventId: event_id,
-      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name || null },
+      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name || null, fbc: updatedPayment.fbc, fbp: updatedPayment.fbp },
       customData: { value: updatedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
-      sourceUrl: req.headers.referer,
-      clientIp: req.ip || req.headers['x-forwarded-for'],
-      userAgent: req.headers['user-agent'],
+      sourceUrl: req.headers.referer || 'https://shwetamakeover.online',
+      clientIp: req.headers['x-forwarded-for'] || req.ip || updatedPayment.clientIp,
+      userAgent: req.headers['user-agent'] || updatedPayment.userAgent,
     });
 
     return res.json({ success: true });
@@ -473,11 +484,11 @@ app.post('/api/webhook', async (req, res) => {
           await sendMetaCAPIEvent({
             eventName: 'Purchase',
             eventId: `purchase_${orderId}`,
-            userData: { phone: capturedPayment.phone, email: capturedPayment.email, name: capturedPayment.name || null },
+            userData: { phone: capturedPayment.phone, email: capturedPayment.email, name: capturedPayment.name || null, fbc: capturedPayment.fbc, fbp: capturedPayment.fbp },
             customData: { value: capturedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
             sourceUrl: 'https://shwetamakeover.online',
-            clientIp: req.ip || req.headers['x-forwarded-for'],
-            userAgent: req.headers['user-agent'],
+            clientIp: capturedPayment.clientIp,
+            userAgent: capturedPayment.userAgent,
           });
         }
 
@@ -519,11 +530,11 @@ app.post('/api/webhook', async (req, res) => {
           await sendMetaCAPIEvent({
             eventName: 'Purchase',
             eventId: `purchase_${orderId}`,
-            userData: { phone: paidPayment.phone, email: paidPayment.email, name: paidPayment.name || null },
+            userData: { phone: paidPayment.phone, email: paidPayment.email, name: paidPayment.name || null, fbc: paidPayment.fbc, fbp: paidPayment.fbp },
             customData: { value: paidPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
             sourceUrl: 'https://shwetamakeover.online',
-            clientIp: req.ip || req.headers['x-forwarded-for'],
-            userAgent: req.headers['user-agent'],
+            clientIp: paidPayment.clientIp,
+            userAgent: paidPayment.userAgent,
           });
     
           console.log('✅ order.paid handled for:', orderId);
