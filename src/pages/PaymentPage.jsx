@@ -12,6 +12,23 @@ const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
 
 
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
+}
+
+// Meta Pixel sets _fbp asynchronously after fbevents.js loads. On fast form
+// submits the cookie may not be present yet — poll briefly before giving up.
+async function waitForFbp(maxMs = 1500, stepMs = 100) {
+  const deadline = Date.now() + maxMs;
+  let v = getCookie('_fbp');
+  while (!v && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, stepMs));
+    v = getCookie('_fbp');
+  }
+  return v || null;
+}
+
 function PaymentPage({ onBackToHome } = {}) {
   const [formData, setFormData]               = useState({ name: '', email: '', phone: '', state: 'Karnataka' })
   const [paymentStatus, setPaymentStatus]     = useState(null)
@@ -117,6 +134,10 @@ function PaymentPage({ onBackToHome } = {}) {
         return
       }
 
+      const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+      const fbc = getCookie('_fbc') || (fbclid ? `fb.1.${Date.now()}.${fbclid}` : null);
+      const fbp = await waitForFbp();
+
       const response = await fetch(`${BACKEND_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,6 +146,8 @@ function PaymentPage({ onBackToHome } = {}) {
           email:  formData.email || null,
           phone:  formData.phone,
           amount: courseAmount,
+          fbc,
+          fbp,
         }),
       })
 
