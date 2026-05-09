@@ -30,6 +30,26 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value.trim().toLowerCase()).digest('hex');
 }
 
+// Resolve the real client IP behind reverse proxies (Cloudflare / nginx / hosting edge).
+// Required because `app.set('trust proxy', true)` alone doesn't cover Cloudflare's
+// `cf-connecting-ip`, and we always want the original client, not a proxy hop.
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  return (
+    (xff && xff.split(',')[0].trim()) ||
+    req.headers['cf-connecting-ip'] ||
+    req.headers['x-real-ip'] ||
+    req.ip ||
+    null
+  );
+}
+
+// Generate a canonical Meta browser-id token when the client didn't send one.
+// Format: fb.<subdomain-index>.<timestamp-ms>.<random> — see Meta Pixel docs.
+function generateFbp() {
+  return `fb.1.${Date.now()}.${Math.floor(Math.random() * 1e10)}`;
+}
+
 async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sourceUrl, clientIp, userAgent }) {
   const pixelId = META_PIXEL_ID;
   const accessToken = META_ACCESS_TOKEN;
@@ -70,6 +90,7 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
 }
 
 const app = express();
+app.set('trust proxy', true);
 
 app.use(cors());
 app.use(express.json({
@@ -263,8 +284,8 @@ app.post('/api/create-order', async (req, res) => {
       currency: 'INR',
       status: 'pending',
       fbc: fbc || null,
-      fbp: fbp || null,
-      clientIp: req.headers['x-forwarded-for'] || req.ip || null,
+      fbp: fbp || generateFbp(),
+      clientIp: getClientIp(req),
       userAgent: req.headers['user-agent'] || null,
     });
 
@@ -404,7 +425,7 @@ app.post('/api/verify-payment', async (req, res) => {
       userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name || null, fbc: updatedPayment.fbc, fbp: updatedPayment.fbp },
       customData: { value: updatedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
       sourceUrl: req.headers.referer || 'https://shwetamakeover.online',
-      clientIp: req.headers['x-forwarded-for'] || req.ip || updatedPayment.clientIp,
+      clientIp: getClientIp(req) || updatedPayment.clientIp,
       userAgent: req.headers['user-agent'] || updatedPayment.userAgent,
     });
 
@@ -953,6 +974,10 @@ app.get('/api/admin/payments', async (req, res) => {
           source: 1,
           remark: 1,
           active: 1,
+          fbc: 1,
+          fbp: 1,
+          clientIp: 1,
+          userAgent: 1,
         },
       },
       ...(nameSearch ? [{ $match: { $or: [
