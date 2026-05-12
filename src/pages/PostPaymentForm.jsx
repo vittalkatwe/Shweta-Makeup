@@ -3,6 +3,7 @@ import './PostPaymentForm.css'
 import clevertap from '../hooks/clevertap'
 import { trackCustomEvent } from '../hooks/meta'
 import { trackEvent as clarityTrackEvent, setProfile as claritySetProfile } from '../hooks/clarity'
+import { trackEvent as mixpanelTrackEvent, setProfile as mixpanelSetProfile } from '../hooks/mixpanel'
 import { usePrice } from '../hooks/usePrice'
 
 const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
@@ -77,6 +78,12 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         City: form.city,
         State: form.state,
       })
+      mixpanelSetProfile({
+        gender: form.gender,
+        city: form.city,
+        state: form.state,
+        occupation: form.occupation,
+      })
       clevertap.event.push('Profile Completed', {
         gender: form.gender,
         city: form.city,
@@ -88,6 +95,16 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         phone: paymentData.phone,
       })
       clarityTrackEvent('Profile Completed', {
+        gender: form.gender,
+        city: form.city,
+        state: form.state,
+        occupation: form.occupation,
+        pricing_variant: `pricing_${courseAmount}`,
+        urgency_variant: urgencyVariant,
+        name: form.name,
+        phone: paymentData.phone,
+      })
+      mixpanelTrackEvent('Profile Completed', {
         gender: form.gender,
         city: form.city,
         state: form.state,

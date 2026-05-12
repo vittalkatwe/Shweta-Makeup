@@ -4,6 +4,7 @@ import { Loader } from 'lucide-react'
 import clevertap from './hooks/clevertap'
 import { trackEvent, trackCustomEvent } from './hooks/meta'
 import { trackEvent as clarityTrackEvent } from './hooks/clarity'
+import { trackEvent as mixpanelTrackEvent } from './hooks/mixpanel'
 import { PriceProvider, usePrice } from './hooks/usePrice'
 import AnnouncementBar from './components/AnnouncementBar'
 import HeroSection from './components/HeroSection'
@@ -39,6 +40,10 @@ function HomePage() {
       pricing_variant: `pricing_${coursePrice}`,
       urgency_variant: urgencyVariant,
     })
+    mixpanelTrackEvent('homepage_shown', {
+      pricing_variant: `pricing_${coursePrice}`,
+      urgency_variant: urgencyVariant,
+    })
     trackEvent('PageView', { pricing_variant: `pricing_${coursePrice}` })
   }, [coursePrice])
 
@@ -71,6 +76,7 @@ function HomePage() {
             firedSections.add(section)
             clevertap.event.push('homepage_scroll', { section, urgency_variant: urgencyVariant })
             clarityTrackEvent('homepage_scroll', { section, urgency_variant: urgencyVariant })
+            mixpanelTrackEvent('homepage_scroll', { section, urgency_variant: urgencyVariant })
             trackCustomEvent('homepage_scroll', { section })
             scrollObserver.unobserve(entry.target)
           }

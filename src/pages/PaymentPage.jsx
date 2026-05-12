@@ -7,6 +7,7 @@ import { usePrice } from '../hooks/usePrice';
 import clevertap from '../hooks/clevertap';
 import { trackEvent, trackCustomEvent } from '../hooks/meta'
 import { trackEvent as clarityTrackEvent, identifyUser as clarityIdentifyUser } from '../hooks/clarity'
+import { trackEvent as mixpanelTrackEvent, identifyUser as mixpanelIdentify } from '../hooks/mixpanel'
 
 const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
@@ -55,6 +56,10 @@ function PaymentPage({ onBackToHome } = {}) {
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
     });
+    mixpanelTrackEvent('payment_page_shown', {
+      pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
+    });
     trackEvent('ViewContent', {
       content_name: '3-Day Hairstyle Masterclass',
       value: courseAmount,
@@ -97,6 +102,18 @@ function PaymentPage({ onBackToHome } = {}) {
       name: formData.name,
     })
     clarityTrackEvent('Payment Initiated', {
+      amount: courseAmount,
+      pricing_variant: `pricing_${courseAmount}`,
+      urgency_variant: urgencyVariant,
+      phone: formData.phone,
+      name: formData.name,
+    })
+    mixpanelIdentify({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+    })
+    mixpanelTrackEvent('Payment Initiated', {
       amount: courseAmount,
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
@@ -202,6 +219,16 @@ function PaymentPage({ onBackToHome } = {}) {
             phone: formData.phone,
             name: formData.name,
           });
+          mixpanelTrackEvent('Payment Success', {
+            amount: courseAmount,
+            original_price: originalAmount,
+            pricing_variant: `pricing_${courseAmount}`,
+            urgency_variant: urgencyVariant,
+            course_name: '3-Day Hairstyle Masterclass',
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            phone: formData.phone,
+            name: formData.name,
+          });
           trackEvent('Purchase', {
             value: courseAmount,
             currency: 'INR',
@@ -222,6 +249,7 @@ function PaymentPage({ onBackToHome } = {}) {
           ondismiss: function () {
             clevertap.event.push('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: formData.name, phone: formData.phone })
             clarityTrackEvent('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: formData.name, phone: formData.phone })
+            mixpanelTrackEvent('Payment Dismissed', { amount: courseAmount, pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: formData.name, phone: formData.phone })
             trackCustomEvent('Payment Dismissed', {
               value: courseAmount,
               pricing_variant: `pricing_${courseAmount}`,
