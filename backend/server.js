@@ -4,7 +4,20 @@ const Razorpay = require('razorpay');
 const cors = require('cors');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const Mixpanel = require('mixpanel');
 require('dotenv').config();
+
+const MIXPANEL_TOKEN = '026410a8af4d9d9acfcfd60900145b2e';
+const mixpanel = Mixpanel.init(MIXPANEL_TOKEN);
+
+function trackBackendEvent(eventName, distinctId, properties = {}) {
+  if (!distinctId) return;
+  try {
+    mixpanel.track(eventName, { distinct_id: distinctId, ...properties });
+  } catch (e) {
+    console.error('mixpanel track failed:', e.message);
+  }
+}
 
 // ── Meta credentials ───────────────────────────────────────
 const META_PIXEL_ID = '1627603605217493';
@@ -30,26 +43,6 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value.trim().toLowerCase()).digest('hex');
 }
 
-// Resolve the real client IP behind reverse proxies (Cloudflare / nginx / hosting edge).
-// Required because `app.set('trust proxy', true)` alone doesn't cover Cloudflare's
-// `cf-connecting-ip`, and we always want the original client, not a proxy hop.
-function getClientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
-  return (
-    (xff && xff.split(',')[0].trim()) ||
-    req.headers['cf-connecting-ip'] ||
-    req.headers['x-real-ip'] ||
-    req.ip ||
-    null
-  );
-}
-
-// Generate a canonical Meta browser-id token when the client didn't send one.
-// Format: fb.<subdomain-index>.<timestamp-ms>.<random> — see Meta Pixel docs.
-function generateFbp() {
-  return `fb.1.${Date.now()}.${Math.floor(Math.random() * 1e10)}`;
-}
-
 async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sourceUrl, clientIp, userAgent }) {
   const pixelId = META_PIXEL_ID;
   const accessToken = META_ACCESS_TOKEN;
@@ -65,11 +58,8 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
         ph: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
         em: userData.email ? sha256(userData.email) : undefined,
         fn: userData.name ? sha256(userData.name.split(' ')[0]) : null,
-        external_id: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
-        fbc: userData.fbc || undefined,
-        fbp: userData.fbp || undefined,
-        client_ip_address: clientIp || undefined,
-        client_user_agent: userAgent || undefined,
+        client_ip_address: clientIp,
+        client_user_agent: userAgent,
       },
       custom_data: customData,
     }],
@@ -90,7 +80,6 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
 }
 
 const app = express();
-app.set('trust proxy', true);
 
 app.use(cors());
 app.use(express.json({
@@ -130,10 +119,6 @@ const paymentSchema = new mongoose.Schema({
   remark:  { type: String, default: null },
   active:  { type: Boolean, default: true },
   isDeleted: { type: Boolean, default: false },
-  fbc:       { type: String, default: null },
-  fbp:       { type: String, default: null },
-  clientIp:  { type: String, default: null },
-  userAgent: { type: String, default: null },
 });
 
 paymentSchema.index({ timestamp: -1 });
@@ -267,7 +252,7 @@ const sendConfirmationEmail = async (payment) => {
 // ============================================================
 app.post('/api/create-order', async (req, res) => {
   try {
-    const { name, email, phone, amount, fbc, fbp } = req.body;
+    const { name, email, phone, amount } = req.body;
 
     if (!phone) {
       return res.status(400).json({ success: false, message: 'Phone are required' });
@@ -283,10 +268,6 @@ app.post('/api/create-order', async (req, res) => {
       amount: AMOUNT_INR,
       currency: 'INR',
       status: 'pending',
-      fbc: fbc || null,
-      fbp: fbp || generateFbp(),
-      clientIp: getClientIp(req),
-      userAgent: req.headers['user-agent'] || null,
     });
 
     await payment.save();
@@ -422,11 +403,11 @@ app.post('/api/verify-payment', async (req, res) => {
     await sendMetaCAPIEvent({
       eventName: 'Purchase',
       eventId: event_id,
-      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name || null, fbc: updatedPayment.fbc, fbp: updatedPayment.fbp },
+      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name || null },
       customData: { value: updatedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
-      sourceUrl: req.headers.referer || 'https://shwetamakeover.online',
-      clientIp: getClientIp(req) || updatedPayment.clientIp,
-      userAgent: req.headers['user-agent'] || updatedPayment.userAgent,
+      sourceUrl: req.headers.referer,
+      clientIp: req.ip || req.headers['x-forwarded-for'],
+      userAgent: req.headers['user-agent'],
     });
 
     return res.json({ success: true });
@@ -505,11 +486,22 @@ app.post('/api/webhook', async (req, res) => {
           await sendMetaCAPIEvent({
             eventName: 'Purchase',
             eventId: `purchase_${orderId}`,
-            userData: { phone: capturedPayment.phone, email: capturedPayment.email, name: capturedPayment.name || null, fbc: capturedPayment.fbc, fbp: capturedPayment.fbp },
+            userData: { phone: capturedPayment.phone, email: capturedPayment.email, name: capturedPayment.name || null },
             customData: { value: capturedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
             sourceUrl: 'https://shwetamakeover.online',
-            clientIp: capturedPayment.clientIp,
-            userAgent: capturedPayment.userAgent,
+            clientIp: req.ip || req.headers['x-forwarded-for'],
+            userAgent: req.headers['user-agent'],
+          });
+
+          trackBackendEvent('payment_success_backend', capturedPayment.phone, {
+            source: 'webhook.payment_captured',
+            amount: capturedPayment.amount,
+            currency: 'INR',
+            razorpay_order_id: orderId,
+            razorpay_payment_id: razorpayPaymentId,
+            email: capturedPayment.email,
+            name: capturedPayment.name,
+            course_name: '3-Day Hairstyle Masterclass',
           });
         }
 
@@ -551,13 +543,23 @@ app.post('/api/webhook', async (req, res) => {
           await sendMetaCAPIEvent({
             eventName: 'Purchase',
             eventId: `purchase_${orderId}`,
-            userData: { phone: paidPayment.phone, email: paidPayment.email, name: paidPayment.name || null, fbc: paidPayment.fbc, fbp: paidPayment.fbp },
+            userData: { phone: paidPayment.phone, email: paidPayment.email, name: paidPayment.name || null },
             customData: { value: paidPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
             sourceUrl: 'https://shwetamakeover.online',
-            clientIp: paidPayment.clientIp,
-            userAgent: paidPayment.userAgent,
+            clientIp: req.ip || req.headers['x-forwarded-for'],
+            userAgent: req.headers['user-agent'],
           });
-    
+
+          trackBackendEvent('payment_success_backend', paidPayment.phone, {
+            source: 'webhook.order_paid',
+            amount: paidPayment.amount,
+            currency: 'INR',
+            razorpay_order_id: orderId,
+            email: paidPayment.email,
+            name: paidPayment.name,
+            course_name: '3-Day Hairstyle Masterclass',
+          });
+
           console.log('✅ order.paid handled for:', orderId);
         }
     
@@ -974,10 +976,6 @@ app.get('/api/admin/payments', async (req, res) => {
           source: 1,
           remark: 1,
           active: 1,
-          fbc: 1,
-          fbp: 1,
-          clientIp: 1,
-          userAgent: 1,
         },
       },
       ...(nameSearch ? [{ $match: { $or: [
