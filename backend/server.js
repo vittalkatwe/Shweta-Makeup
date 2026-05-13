@@ -43,6 +43,24 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value.trim().toLowerCase()).digest('hex');
 }
 
+// Resolve the real client IP behind reverse proxies (nginx in front of Node).
+// nginx must be configured to forward X-Forwarded-For (see /etc/nginx/conf.d/app.conf).
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  return (
+    (xff && xff.split(',')[0].trim()) ||
+    req.headers['cf-connecting-ip'] ||
+    req.headers['x-real-ip'] ||
+    req.ip ||
+    null
+  );
+}
+
+// Canonical Meta browser-id token, used as a fallback when the client didn't send one.
+function generateFbp() {
+  return `fb.1.${Date.now()}.${Math.floor(Math.random() * 1e10)}`;
+}
+
 async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sourceUrl, clientIp, userAgent }) {
   const pixelId = META_PIXEL_ID;
   const accessToken = META_ACCESS_TOKEN;
@@ -57,9 +75,12 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
       user_data: {
         ph: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
         em: userData.email ? sha256(userData.email) : undefined,
-        fn: userData.name ? sha256(userData.name.split(' ')[0]) : null,
-        client_ip_address: clientIp,
-        client_user_agent: userAgent,
+        fn: userData.name ? sha256(userData.name.split(' ')[0]) : undefined,
+        external_id: userData.phone ? sha256(userData.phone.replace(/\D/g, '')) : undefined,
+        fbc: userData.fbc || undefined,
+        fbp: userData.fbp || undefined,
+        client_ip_address: clientIp || undefined,
+        client_user_agent: userAgent || undefined,
       },
       custom_data: customData,
     }],
@@ -80,6 +101,7 @@ async function sendMetaCAPIEvent({ eventName, eventId, userData, customData, sou
 }
 
 const app = express();
+app.set('trust proxy', true);
 
 app.use(cors());
 app.use(express.json({
@@ -119,6 +141,10 @@ const paymentSchema = new mongoose.Schema({
   remark:  { type: String, default: null },
   active:  { type: Boolean, default: true },
   isDeleted: { type: Boolean, default: false },
+  fbc:       { type: String, default: null },
+  fbp:       { type: String, default: null },
+  clientIp:  { type: String, default: null },
+  userAgent: { type: String, default: null },
 });
 
 paymentSchema.index({ timestamp: -1 });
@@ -252,7 +278,7 @@ const sendConfirmationEmail = async (payment) => {
 // ============================================================
 app.post('/api/create-order', async (req, res) => {
   try {
-    const { name, email, phone, amount } = req.body;
+    const { name, email, phone, amount, fbc, fbp } = req.body;
 
     if (!phone) {
       return res.status(400).json({ success: false, message: 'Phone are required' });
@@ -268,6 +294,10 @@ app.post('/api/create-order', async (req, res) => {
       amount: AMOUNT_INR,
       currency: 'INR',
       status: 'pending',
+      fbc: fbc || null,
+      fbp: fbp || generateFbp(),
+      clientIp: getClientIp(req),
+      userAgent: req.headers['user-agent'] || null,
     });
 
     await payment.save();
@@ -403,11 +433,17 @@ app.post('/api/verify-payment', async (req, res) => {
     await sendMetaCAPIEvent({
       eventName: 'Purchase',
       eventId: event_id,
-      userData: { phone: updatedPayment.phone, email: updatedPayment.email, name: updatedPayment.name || null },
+      userData: {
+        phone: updatedPayment.phone,
+        email: updatedPayment.email,
+        name: updatedPayment.name || null,
+        fbc: updatedPayment.fbc,
+        fbp: updatedPayment.fbp,
+      },
       customData: { value: updatedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
-      sourceUrl: req.headers.referer,
-      clientIp: req.ip || req.headers['x-forwarded-for'],
-      userAgent: req.headers['user-agent'],
+      sourceUrl: req.headers.referer || 'https://shwetamakeover.online',
+      clientIp: getClientIp(req) || updatedPayment.clientIp,
+      userAgent: req.headers['user-agent'] || updatedPayment.userAgent,
     });
 
     return res.json({ success: true });
@@ -486,11 +522,17 @@ app.post('/api/webhook', async (req, res) => {
           await sendMetaCAPIEvent({
             eventName: 'Purchase',
             eventId: `purchase_${orderId}`,
-            userData: { phone: capturedPayment.phone, email: capturedPayment.email, name: capturedPayment.name || null },
+            userData: {
+              phone: capturedPayment.phone,
+              email: capturedPayment.email,
+              name: capturedPayment.name || null,
+              fbc: capturedPayment.fbc,
+              fbp: capturedPayment.fbp,
+            },
             customData: { value: capturedPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
             sourceUrl: 'https://shwetamakeover.online',
-            clientIp: req.ip || req.headers['x-forwarded-for'],
-            userAgent: req.headers['user-agent'],
+            clientIp: capturedPayment.clientIp,
+            userAgent: capturedPayment.userAgent,
           });
 
           trackBackendEvent('payment_success_backend', capturedPayment.phone, {
@@ -543,11 +585,17 @@ app.post('/api/webhook', async (req, res) => {
           await sendMetaCAPIEvent({
             eventName: 'Purchase',
             eventId: `purchase_${orderId}`,
-            userData: { phone: paidPayment.phone, email: paidPayment.email, name: paidPayment.name || null },
+            userData: {
+              phone: paidPayment.phone,
+              email: paidPayment.email,
+              name: paidPayment.name || null,
+              fbc: paidPayment.fbc,
+              fbp: paidPayment.fbp,
+            },
             customData: { value: paidPayment.amount, currency: 'INR', content_name: '3-Day Hairstyle Masterclass' },
             sourceUrl: 'https://shwetamakeover.online',
-            clientIp: req.ip || req.headers['x-forwarded-for'],
-            userAgent: req.headers['user-agent'],
+            clientIp: paidPayment.clientIp,
+            userAgent: paidPayment.userAgent,
           });
 
           trackBackendEvent('payment_success_backend', paidPayment.phone, {
@@ -976,6 +1024,10 @@ app.get('/api/admin/payments', async (req, res) => {
           source: 1,
           remark: 1,
           active: 1,
+          fbc: 1,
+          fbp: 1,
+          clientIp: 1,
+          userAgent: 1,
         },
       },
       ...(nameSearch ? [{ $match: { $or: [
