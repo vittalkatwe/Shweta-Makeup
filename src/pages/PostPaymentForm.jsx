@@ -32,7 +32,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
   const validate = () => {
     const errs = {}
     FIELDS.forEach(f => {
-      if (f.required && !form[f.name]?.trim()) errs[f.name] = 'This field is required'
+      if (f.required && !String(form[f.name] ?? '').trim()) errs[f.name] = 'This field is required'
     })
     setErrors(errs)
 
