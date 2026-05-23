@@ -9,20 +9,22 @@ import { usePrice } from '../hooks/usePrice'
 const BACKEND_URL = import.meta.env.REACT_APP_BACKEND_URL;
 
 const FIELDS = [
-  { name: 'name',  label: 'Full Name', type: 'text', placeholder: 'Your name', required: true },
-  { name: 'phone',      label: 'WhatsApp Number',        type: 'tel',      placeholder: '98XXXXXXXX', required: true, prefix: '+91' },
+  { name: 'name',  label: 'Full Name',       type: 'text',   placeholder: 'Your name',        required: true },
+  { name: 'age',   label: 'Age',             type: 'number', placeholder: 'e.g. 25',          required: true },
+  { name: 'email', label: 'Email Address',   type: 'email',  placeholder: 'you@example.com',  required: true },
+  { name: 'phone', label: 'WhatsApp Number', type: 'tel',    placeholder: '98XXXXXXXX',       required: true, prefix: '+91' },
   { name: 'gender',     label: 'Gender',                 type: 'select',   required: true,
     options: ['Female', 'Male', 'Non-binary', 'Prefer not to say'] },
   { name: 'city',       label: 'City',                   type: 'text',     placeholder: 'Mumbai, Delhi…', required: true },
   { name: 'state',      label: 'State',                  type: 'text',     placeholder: 'Maharashtra…',   required: true },
   { name: 'occupation', label: 'Occupation',             type: 'select',   required: true,
-    options: ['Student', 'Working Professional', 'Homemaker', 'Freelancer / Self-employed', 'Beauty Professional', 'Other'] },
+    options: ['Makeup Artist', 'Makeup & Hair Stylist', 'Housewife', 'Salon Owner', 'Salon Worker', 'IT Job Holder', 'Other Job Holder', 'Nail Artist', 'Only Hair Artist'] },
   { name: 'reason',     label: 'Why do you want to learn?', type: 'textarea', placeholder: 'I want to do my own makeup for events…', required: false },
 ]
 
 export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrderId, onComplete }) {
   const { urgencyVariant } = usePrice()
-  const [form, setForm]           = useState({ name: '', phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
+  const [form, setForm]           = useState({ name: '',age: '', email: '', phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]       = useState({})
   const fieldRefs = useRef({})
@@ -52,7 +54,8 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name,
-          email: paymentData.email,
+          age: form.age,
+          email: form.email, 
           phone: paymentData.phone,
           razorpayOrderId,
           whatsappPhone: form.phone,

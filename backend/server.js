@@ -157,6 +157,7 @@ const profileSchema = new mongoose.Schema({
   // Link to payment
   razorpayOrderId: { type: String },
   name:            { type: String, default: null },
+  age:             { type: Number, default: null },
   email:           { type: String, default: null },
   phone:           { type: String },
 
@@ -342,7 +343,7 @@ app.post('/api/create-order', async (req, res) => {
 // ============================================================
 app.post('/api/save-profile', async (req, res) => {
   try {
-    const { name, email, phone, razorpayOrderId, whatsappPhone, gender, city, state, occupation, reason } = req.body;
+    const { name, email, phone, age, razorpayOrderId, whatsappPhone, gender, city, state, occupation, reason } = req.body;
 
     const query = razorpayOrderId
       ? { razorpayOrderId }
@@ -352,6 +353,7 @@ app.post('/api/save-profile', async (req, res) => {
       query,
       {
         $set: {
+          age: age ? parseInt(age, 10) : null,
           whatsappPhone: whatsappPhone || phone,
           gender,
           city,
