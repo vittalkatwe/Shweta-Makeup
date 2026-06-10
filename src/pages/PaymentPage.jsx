@@ -448,7 +448,14 @@ function PaymentPage({ onBackToHome } = {}) {
               <span className="pp-total-value" data-clarity-unmask="true">₹{courseAmount.toFixed(2)}</span>
             )}
           </div>
+
+          <div className="pp-bonus-line">
+            <span className="pp-bonus-icon">🎉</span>
+            <span className="pp-bonus-text">Get all class video recordings for <strong>1 year</strong></span>
+          </div>
+          
         </div>
+
 
       </div>
 
