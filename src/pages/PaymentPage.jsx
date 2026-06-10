@@ -451,7 +451,7 @@ function PaymentPage({ onBackToHome } = {}) {
 
           <div className="pp-bonus-line">
             <span className="pp-bonus-icon">🎉</span>
-            <span className="pp-bonus-text">Get all class video recordings for <strong>1 year</strong></span>
+            <span className="pp-bonus-text">Get All Class Video Recordings For <strong>1 Year</strong></span>
           </div>
           
         </div>
