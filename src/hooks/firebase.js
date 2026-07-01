@@ -65,7 +65,8 @@ remoteConfig.defaultConfig = {
   pricing_variant: "default",
   urgency_test: "false",
   course_dates: getDefaultDates(),
+  hero_title_variant: "A", 
 };
 
 // ✅ Export everything you need
-export { remoteConfig, fetchAndActivate, getValue };
+export { remoteConfig, fetchAndActivate, getValue, analytics };

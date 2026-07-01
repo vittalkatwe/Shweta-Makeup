@@ -9,6 +9,7 @@ export function PriceProvider({ children }) {
   const [pricingVariant, setPricingVariant] = useState(remoteConfig.defaultConfig.pricing_variant || 'default')
   const [urgencyTest, setUrgencyTest] = useState(remoteConfig.defaultConfig.urgency_test === "true")
   const [courseDates, setCourseDates] = useState(remoteConfig.defaultConfig.course_dates)
+  const [heroTitleVariant, setHeroTitleVariant] = useState(remoteConfig.defaultConfig.hero_title_variant || 'A')
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -22,11 +23,13 @@ export function PriceProvider({ children }) {
         const variant = getValue(remoteConfig, 'pricing_variant').asString()
         const urgency = getValue(remoteConfig, 'urgency_test').asString()
         const dates = getValue(remoteConfig, 'course_dates').asString()
+        const heroVariant = getValue(remoteConfig, 'hero_title_variant').asString()
         setCoursePrice(Number(price) || 499)
         setOriginalPrice(Number(original) || 999)
         setPricingVariant(variant || 'default')
         setUrgencyTest(urgency === "true")
         setCourseDates(dates || remoteConfig.defaultConfig.course_dates)
+        setHeroTitleVariant(heroVariant || 'A')
       } catch (err) {
         console.error('Remote config error:', err)
         setUrgencyTest(false)
@@ -43,7 +46,7 @@ export function PriceProvider({ children }) {
   const urgencyVariant = urgencyTest ? 'enabled' : 'disabled'
 
   return (
-    <PriceContext.Provider value={{ coursePrice, originalPrice, pricingVariant, urgencyTest, urgencyVariant, courseDates, ready }}>
+    <PriceContext.Provider value={{ coursePrice, originalPrice, pricingVariant, urgencyTest, urgencyVariant, courseDates, heroTitleVariant, ready }}>
       {children}
     </PriceContext.Provider>
   )

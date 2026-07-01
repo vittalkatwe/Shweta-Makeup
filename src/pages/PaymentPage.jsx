@@ -8,6 +8,8 @@ import clevertap from '../hooks/clevertap';
 import { trackEvent, trackCustomEvent } from '../hooks/meta'
 import { trackEvent as clarityTrackEvent, identifyUser as clarityIdentifyUser } from '../hooks/clarity'
 import { trackEvent as mixpanelTrackEvent, identifyUser as mixpanelIdentify } from '../hooks/mixpanel'
+import { logEvent } from 'firebase/analytics'
+import { analytics } from '../hooks/firebase'
 
 const BACKEND_URL     = import.meta.env.REACT_APP_BACKEND_URL;
 const RAZORPAY_KEY_ID = import.meta.env.REACT_APP_RAZORPAY_KEY_ID;
@@ -239,6 +241,14 @@ function PaymentPage({ onBackToHome } = {}) {
             phone: formData.phone,
             name: formData.name,
           }, { eventID: eventId });
+
+          logEvent(analytics, 'purchase', {
+            transaction_id: razorpayResponse.razorpay_order_id,
+            value: courseAmount,
+            currency: 'INR',
+            items: [{ item_name: '3-Day Hairstyle Masterclass' }],
+          })
+          
                 
           setPaymentStatus('success')
           setShowProfileForm(true)
@@ -450,10 +460,8 @@ function PaymentPage({ onBackToHome } = {}) {
           </div>
 
           <div className="pp-bonus-line">
-            <span className="pp-bonus-icon">🎉</span>
-            <span className="pp-bonus-text">Get All Class Video Recordings For <strong>1 Year</strong></span>
+            📹 Live Classes + 1 Year Video Recording <span className="free-text-pill"><strong>(FREE)</strong></span>
           </div>
-          
         </div>
 
 

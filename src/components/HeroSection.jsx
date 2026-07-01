@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { usePrice } from '../hooks/usePrice'
+import { logEvent } from 'firebase/analytics'
+import { analytics } from '../hooks/firebase'
 
 const CHECKOUT_URL = '/payment'
 
@@ -122,7 +124,7 @@ function ParticleCanvas() {
 
 
 export default function HeroSection() {
-  const { coursePrice: courseAmount, urgencyTest, courseDates} = usePrice()
+  const { coursePrice: courseAmount, urgencyTest, courseDates, heroTitleVariant} = usePrice()
 
   const videoRef = useRef(null)
   const containerRef = useRef(null)
@@ -201,9 +203,18 @@ export default function HeroSection() {
     setIsMuted(video.muted)
   }
 
+  useEffect(() => {
+    if (heroTitleVariant) {
+      logEvent(analytics, 'hero_variant_view', { variant: heroTitleVariant })
+    }
+  }, [heroTitleVariant])
+
+
   return (
     <>
       <style>{`
+
+      
         @keyframes tickerEnter {
           0%   { opacity: 0; transform: translateY(12px) scale(0.94); filter: blur(4px); }
           100% { opacity: 1; transform: translateY(0px) scale(1); filter: blur(0px); }
@@ -365,18 +376,59 @@ export default function HeroSection() {
           background: #4ade80;
           animation: none;
         }
+
+        .hero-title-sub {
+          color: #ed4040;
+          letter-spacing: 0.04em;
+        }
+
+        .verified-badge {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin-top: 4px;
+        }
+
+        .verified-icon {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+        }
       `}</style>
 
       <section className="hero-section" data-section="hero">
         <div className="hero-inner">
 
           <SocialProofTicker />
-
-          <h1 className="hero-title">
-            Makeup Achha Hai, <br />
-            <em> Par Hairstyling Weak?</em><br />
-            Stop Losing Time & Clients
-          </h1>
+          {heroTitleVariant === 'B' ? (
+            <h1 className="hero-title">
+              Advance Hairstyle<br />
+              <span className="hero-title-sub">Masterclass</span>
+            </h1>
+          ) : heroTitleVariant === 'C' ? (
+            <>
+              <h1 className="hero-title">
+                Advance Hairstyle<br />
+                <span className="hero-title-sub">Masterclass</span>
+              </h1>
+              <div className="verified-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#22c55e" className="verified-icon">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                </svg>
+                <span>For Makeup Artists</span>
+              </div>
+            </>
+          ) : (
+            <h1 className="hero-title">
+              Makeup Achha Hai, <br />
+              <em> Par Hairstyling Weak?</em><br />
+              Stop Losing Time & Clients
+            </h1>
+          )}
 
           <div ref={containerRef} className="video-container" onClick={toggleMute}>
             <video
