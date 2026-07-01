@@ -25,7 +25,7 @@ import TermsOfUse from './pages/TermsOfUse.jsx'
 import Contact from './pages/Contact.jsx'
 
 function HomePage() {
-  const { coursePrice, urgencyVariant } = usePrice()
+  const { coursePrice, urgencyVariant, heroTitleVariant } = usePrice()
   const eventFiredRef = useRef(false)
   const firedSectionsRef = useRef(new Set())
 
@@ -35,17 +35,20 @@ function HomePage() {
     clevertap.event.push('homepage_shown', {
       pricing_variant: `pricing_${coursePrice}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
     })
     clarityTrackEvent('homepage_shown', {
       pricing_variant: `pricing_${coursePrice}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
     })
     mixpanelTrackEvent('homepage_shown', {
       pricing_variant: `pricing_${coursePrice}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
     })
     trackEvent('PageView', { pricing_variant: `pricing_${coursePrice}` })
-  }, [coursePrice])
+  }, [coursePrice, heroTitleVariant])
 
   useEffect(() => {
     const observer = new IntersectionObserver(

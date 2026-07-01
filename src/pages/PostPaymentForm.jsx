@@ -23,7 +23,7 @@ const FIELDS = [
 ]
 
 export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrderId, onComplete }) {
-  const { urgencyVariant } = usePrice()
+  const { urgencyVariant, heroTitleVariant } = usePrice()
   const [form, setForm]           = useState({ name: '',age: '', email: '', phone: '', gender: '', city: '', state: '', occupation: '', reason: '' })
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors]       = useState({})
@@ -96,6 +96,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         urgency_variant: urgencyVariant,
         name: form.name,
         phone: paymentData.phone,
+        hero_variant: heroTitleVariant,
       })
       clarityTrackEvent('Profile Completed', {
         gender: form.gender,
@@ -106,6 +107,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         urgency_variant: urgencyVariant,
         name: form.name,
         phone: paymentData.phone,
+        hero_variant: heroTitleVariant,
       })
       mixpanelTrackEvent('Profile Completed', {
         gender: form.gender,
@@ -116,6 +118,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         urgency_variant: urgencyVariant,
         name: form.name,
         phone: paymentData.phone,
+        hero_variant: heroTitleVariant,
       })
       trackCustomEvent('Profile Completed', {
         gender: form.gender,
@@ -125,6 +128,7 @@ export default function PostPaymentForm({ paymentData, courseAmount, razorpayOrd
         pricing_variant: `pricing_${courseAmount}`,
         name: form.name,
         phone: paymentData.phone,
+        hero_variant: heroTitleVariant,
       })
       setSubmitting(false)
       onComplete(form)

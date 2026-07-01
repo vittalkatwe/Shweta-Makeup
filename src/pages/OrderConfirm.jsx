@@ -8,17 +8,18 @@ import { usePrice } from '../hooks/usePrice'
 
 export default function OrderConfirm({ paymentData = {}, profileData = {}, courseAmount }) {
   const canvasRef = useRef(null)
-  const { urgencyVariant, courseDates } = usePrice()
+  const { urgencyVariant, courseDates, heroTitleVariant } = usePrice()
 
   useEffect(() => {
-    clevertap.event.push('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone })
-    clarityTrackEvent('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone })
-    mixpanelTrackEvent('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone })
+    clevertap.event.push('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone, hero_variant: heroTitleVariant })
+    clarityTrackEvent('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone, hero_variant: heroTitleVariant })
+    mixpanelTrackEvent('Order Confirmed', { course_name: '3-Day Hairstyle Masterclass', pricing_variant: `pricing_${courseAmount}`, urgency_variant: urgencyVariant, name: paymentData.name, phone: paymentData.phone, hero_variant: heroTitleVariant })
     trackCustomEvent('Order Confirmed', {
       course_name: '3-Day Hairstyle Masterclass',
       pricing_variant: `pricing_${courseAmount}`,
       name: paymentData.name,
       phone: paymentData.phone,
+      hero_variant: heroTitleVariant,
     })
   }, [])
 

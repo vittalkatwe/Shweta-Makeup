@@ -41,7 +41,7 @@ function PaymentPage({ onBackToHome } = {}) {
   const [couponOpen, setCouponOpen]           = useState(false)
   const [gstOpen, setGstOpen]                 = useState(false)
   const [couponCode, setCouponCode]           = useState('')
-  const { coursePrice: courseAmount, originalPrice: originalAmount, pricingVariant, urgencyTest, urgencyVariant } = usePrice()
+  const { coursePrice: courseAmount, originalPrice: originalAmount, pricingVariant, urgencyTest, urgencyVariant, heroTitleVariant } = usePrice()
   const [razorpayOrderId, setRazorpayOrderId] = useState(null);
   const [phoneError, setPhoneError]           = useState(false)
   const phoneRowRef = useRef(null);
@@ -53,20 +53,24 @@ function PaymentPage({ onBackToHome } = {}) {
     clevertap.event.push('payment_page_shown', {
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
     });
     clarityTrackEvent('payment_page_shown', {
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
     });
     mixpanelTrackEvent('payment_page_shown', {
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
     });
     trackEvent('ViewContent', {
       content_name: '3-Day Hairstyle Masterclass',
       value: courseAmount,
       currency: 'INR',
       pricing_variant: `pricing_${courseAmount}`,
+      hero_variant: heroTitleVariant,
     });
   }, [courseAmount]);
 
@@ -100,6 +104,7 @@ function PaymentPage({ onBackToHome } = {}) {
       amount: courseAmount,
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
       phone: formData.phone,
       name: formData.name,
     })
@@ -107,6 +112,7 @@ function PaymentPage({ onBackToHome } = {}) {
       amount: courseAmount,
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
       phone: formData.phone,
       name: formData.name,
     })
@@ -119,6 +125,7 @@ function PaymentPage({ onBackToHome } = {}) {
       amount: courseAmount,
       pricing_variant: `pricing_${courseAmount}`,
       urgency_variant: urgencyVariant,
+      hero_variant: heroTitleVariant,
       phone: formData.phone,
       name: formData.name,
     })
@@ -129,6 +136,7 @@ function PaymentPage({ onBackToHome } = {}) {
       pricing_variant: `pricing_${courseAmount}`,
       phone: formData.phone,
       name: formData.name,
+      hero_variant: heroTitleVariant,
     })
     // Identify user in CleverTap at earliest moment (before any API calls)
     clevertap.onUserLogin.push({
@@ -210,6 +218,7 @@ function PaymentPage({ onBackToHome } = {}) {
             razorpay_order_id: razorpayResponse.razorpay_order_id,
             phone: formData.phone,
             name: formData.name,
+            hero_variant: heroTitleVariant,
           });
           clarityTrackEvent('Payment Success', {
             amount: courseAmount,
@@ -220,6 +229,7 @@ function PaymentPage({ onBackToHome } = {}) {
             razorpay_order_id: razorpayResponse.razorpay_order_id,
             phone: formData.phone,
             name: formData.name,
+            hero_variant: heroTitleVariant,
           });
           mixpanelTrackEvent('Payment Success', {
             amount: courseAmount,
@@ -230,6 +240,7 @@ function PaymentPage({ onBackToHome } = {}) {
             razorpay_order_id: razorpayResponse.razorpay_order_id,
             phone: formData.phone,
             name: formData.name,
+            hero_variant: heroTitleVariant,
           });
           trackEvent('Purchase', {
             value: courseAmount,
@@ -240,6 +251,7 @@ function PaymentPage({ onBackToHome } = {}) {
             order_id: razorpayResponse.razorpay_order_id,
             phone: formData.phone,
             name: formData.name,
+            hero_variant: heroTitleVariant,
           }, { eventID: eventId });
 
           logEvent(analytics, 'purchase', {
@@ -247,6 +259,7 @@ function PaymentPage({ onBackToHome } = {}) {
             value: courseAmount,
             currency: 'INR',
             items: [{ item_name: '3-Day Hairstyle Masterclass' }],
+            hero_variant: heroTitleVariant,
           })
           
                 
@@ -265,6 +278,7 @@ function PaymentPage({ onBackToHome } = {}) {
               pricing_variant: `pricing_${courseAmount}`,
               name: formData.name,
               phone: formData.phone,
+              hero_variant: heroTitleVariant,
             })
             setPaymentStatus('failed')
             setLoading(false)
