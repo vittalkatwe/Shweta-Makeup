@@ -11,7 +11,11 @@ interface QuickDateFilterProps {
 }
 
 function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  // Use local date parts so IST midnight is treated as today, not UTC midnight
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function getPresetDates(preset: Preset): { from: string; to: string } {

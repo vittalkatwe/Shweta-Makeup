@@ -57,7 +57,8 @@ export default function CustomersPage() {
   const [occupation, setOccupation] = useState("");
   const [purchaseStatus, setPurchaseStatus] = useState("");
   const [source, setSource] = useState("");
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const _d = new Date();
+  const todayStr = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
   const [dateFrom, setDateFrom] = useState(todayStr);
   const [dateTo, setDateTo] = useState(todayStr);
 

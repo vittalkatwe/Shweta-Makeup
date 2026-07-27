@@ -69,16 +69,24 @@ export default function OrdersPage() {
   const [gender, setGender] = useState("");
   const [state, setState] = useState("");
   const [source, setSource] = useState("");
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const _d = new Date();
+  const todayStr = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
   const [dateFrom, setDateFrom] = useState(todayStr);
   const [dateTo, setDateTo] = useState(todayStr);
   const [amount, setAmount] = useState("");
 
   // Create order state
+  const nowLocal = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  };
+
   const [createOpen, setCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createPhone, setCreatePhone] = useState("");
   const [createAmount, setCreateAmount] = useState("");
+  const [createTimestamp, setCreateTimestamp] = useState(nowLocal);
   const [createName, setCreateName] = useState("");
   const [createEmail, setCreateEmail] = useState("");
   const [createWhatsapp, setCreateWhatsapp] = useState("");
@@ -106,7 +114,7 @@ export default function OrdersPage() {
   const { data, isLoading } = useOrders(filters);
   const { data: trendsData, isLoading: trendsLoading } = usePaymentTrends(30);
   const { data: metaAdsSummary } = useMetaAdsSummary({ dateFrom, dateTo });
-  const { data: metaAdsDaily } = useMetaAdsDaily({ dateFrom, dateTo });
+  const { data: metaAdsDailyTrends } = useMetaAdsDaily({ days: 30 });
 
   const exportUrl = buildUrl("/api/admin/orders", {
     search: search || undefined,
@@ -139,6 +147,7 @@ export default function OrdersPage() {
     setCreateCity("");
     setCreateState("");
     setCreateOccupation("");
+    setCreateTimestamp(nowLocal());
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -161,6 +170,7 @@ export default function OrdersPage() {
           state: createState || undefined,
           occupation: createOccupation || undefined,
           source: "whatsapp",
+          timestamp: createTimestamp ? new Date(createTimestamp).toISOString() : undefined,
         }),
       });
       resetCreateForm();
@@ -311,6 +321,16 @@ export default function OrdersPage() {
                         onChange={(e) => setCreateAmount(e.target.value)}
                         required
                         min={1}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Date & Time *</label>
+                      <input
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        type="datetime-local"
+                        value={createTimestamp}
+                        onChange={(e) => setCreateTimestamp(e.target.value)}
+                        required
                       />
                     </div>
                   </div>
@@ -480,7 +500,7 @@ export default function OrdersPage() {
           ) : (
             <TrendChart
               data={(trendsData?.trends || []).map((point) => {
-                const spend = metaAdsDaily?.daily?.find((d) => d.date === point.date)?.spend ?? 0;
+                const spend = metaAdsDailyTrends?.daily?.find((d) => d.date === point.date)?.spend ?? 0;
                 return { ...point, spend, profit: point.revenue - spend };
               })}
               type="revenue"
