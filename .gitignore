@@ -1,3 +1,15 @@
 node_modules/
-backend/node_modules/
 .env
+.env.local
+.DS_Store
+.idea/
+.claude/
+*.log
+tsconfig.tsbuildinfo
+
+# analytics outputs (generated locally, not tracked)
+analytics/*.xlsx
+analytics/*.csv
+analytics/~$*
+analytics/_tmp_thumbs*/
+analytics/creative_thumbnails/
