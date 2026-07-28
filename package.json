@@ -1,28 +1,10 @@
 {
-  "name": "makeup-course",
+  "name": "shweta-makeup",
   "private": true,
-  "version": "1.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "dev:admin": "npm --prefix admin run dev -- -p 3001"
-  },
-  "dependencies": {
-    "clevertap-web-sdk": "^2.6.0",
-    "firebase": "^12.11.0",
-    "lucide-react": "^1.6.0",
-    "mixpanel-browser": "^2.78.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^7.13.2"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.2.0",
-    "vite": "^5.0.0"
+    "dev:admin": "npm --prefix admin run dev -- -p 3001",
+    "build": "npm --prefix frontend run build"
   }
 }

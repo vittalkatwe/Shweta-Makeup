@@ -48,10 +48,10 @@ export default function DashboardPage() {
     }
   }
 
-  const chartData = (trendsData?.trends || []).map((point) => ({
-    ...point,
-    spend: metaAdsDaily?.daily?.find((d) => d.date === point.date)?.spend ?? 0,
-  }));
+  const chartData = (trendsData?.trends || []).map((point) => {
+    const spend = metaAdsDaily?.daily?.find((d) => d.date === point.date)?.spend ?? 0;
+    return { ...point, spend, profit: point.revenue - spend };
+  });
   const revenue30d = (trendsData?.trends || []).reduce((s, t) => s + t.revenue, 0);
   const spend30d = metaAdsSummary?.totalSpend ?? 0;
   const profit30d = revenue30d - spend30d;
@@ -177,7 +177,7 @@ export default function DashboardPage() {
           {trendsLoading ? (
             <Skeleton className="h-[250px] w-full" />
           ) : (
-            <TrendChart data={chartData} type="revenue" showSpend={true} />
+            <TrendChart data={chartData} type="revenue" showSpend={true} showProfit={true} />
           )}
         </CardContent>
       </Card>

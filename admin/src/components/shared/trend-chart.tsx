@@ -78,7 +78,7 @@ export function TrendChart({ data, type, showSpend, showProfit }: TrendChartProp
         />
         <Area
           yAxisId="left"
-          type="monotone"
+          type="linear"
           dataKey="revenue"
           name="Revenue (₹)"
           stroke="hsl(142, 60%, 45%)"
@@ -86,12 +86,12 @@ export function TrendChart({ data, type, showSpend, showProfit }: TrendChartProp
           fillOpacity={0.15}
         />
         <Bar yAxisId="right" dataKey="orders" name="Orders" fill="hsl(210, 80%, 55%)" opacity={0.7} barSize={16} />
-        <Line yAxisId="right" type="monotone" dataKey="failed" name="Failed" stroke="hsl(0, 80%, 55%)" strokeDasharray="4 4" dot={false} />
+        <Line yAxisId="right" type="linear" dataKey="failed" name="Failed" stroke="hsl(0, 80%, 55%)" strokeDasharray="4 4" dot={false} />
         {showSpend && (
-          <Line yAxisId="left" type="monotone" dataKey="spend" name="Ad Spend (₹)" stroke="hsl(270, 70%, 55%)" strokeDasharray="5 3" dot={false} />
+          <Line yAxisId="left" type="linear" dataKey="spend" name="Ad Spend (₹)" stroke="hsl(270, 70%, 55%)" strokeDasharray="5 3" dot={false} />
         )}
         {showProfit && (
-          <Line yAxisId="left" type="monotone" dataKey="profit" name="Profit (₹)" stroke="hsl(38, 90%, 50%)" strokeWidth={2} dot={false} />
+          <Line yAxisId="left" type="linear" dataKey="profit" name="Profit (₹)" stroke="hsl(38, 90%, 50%)" strokeWidth={2} dot={false} />
         )}
       </ComposedChart>
     </ResponsiveContainer>
