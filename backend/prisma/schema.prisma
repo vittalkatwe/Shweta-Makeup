@@ -1,0 +1,84 @@
+// Prisma schema for the makeup-course backend.
+// Migrated from MongoDB (Mongoose) — two flat collections (payments, profiles)
+// linked by razorpayOrderId — to a normalized PostgreSQL model:
+//   Customer  = one row per person (deduped by normalized phone) + demographics
+//   Order     = one row per payment/transaction, FK -> Customer
+//
+// See scripts/migrate-mongo-to-pg.js for the one-time ETL and
+// /Users/.../.claude/plans for the full migration plan.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection (PgBouncer / Neon pooler) used at runtime
+  directUrl = env("DIRECT_URL")   // direct connection used by `prisma migrate`
+}
+
+enum OrderStatus {
+  pending
+  created
+  paid
+  failed
+}
+
+enum Source {
+  website
+  whatsapp
+}
+
+model Customer {
+  id                 String   @id @default(cuid())
+  phone              String   @unique // normalized digits (\D stripped); dedup key
+  name               String?
+  email              String?
+  source             Source? // acquisition channel (denormalized from the customer's orders)
+  age                Int?
+  whatsappPhone      String?  @map("whatsapp_phone")
+  gender             String?
+  city               String?
+  state              String?
+  occupation         String?
+  reason             String?
+  hasPurchasedCourse Boolean  @default(false) @map("has_purchased_course")
+  isDeleted          Boolean  @default(false) @map("is_deleted")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacyProfileIds   String[] @default([]) @map("legacy_profile_ids") // Mongo Profile _id(s) merged into this customer
+
+  orders Order[]
+
+  @@index([createdAt(sort: Desc)])
+  @@map("customers")
+}
+
+model Order {
+  id                  String      @id @default(cuid()) // migrated rows keep the legacy Payment _id (24-hex ObjectId)
+  customerId          String      @map("customer_id")
+  customer            Customer    @relation(fields: [customerId], references: [id])
+  amount              Int
+  currency            String      @default("INR")
+  razorpayOrderId     String?     @unique @map("razorpay_order_id") // Postgres UNIQUE allows multiple NULLs (manual orders)
+  razorpayPaymentId   String?     @map("razorpay_payment_id")
+  status              OrderStatus @default(pending)
+  source              Source      @default(website)
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(6) // was Mongo `timestamp`
+  errorCode           String?     @map("error_code")
+  errorDescription    String?     @map("error_description")
+  emailSent           Boolean     @default(false) @map("email_sent")
+  remark              String?
+  active              Boolean     @default(true)
+  isDeleted           Boolean     @default(false) @map("is_deleted")
+  fbc                 String?
+  fbp                 String?
+  clientIp            String?     @map("client_ip")
+  userAgent           String?     @map("user_agent")
+  courseName          String?     @map("course_name")
+  coursePurchasePrice Int?        @map("course_purchase_price")
+
+  @@index([createdAt(sort: Desc)]) // ~ Mongo { timestamp: -1 }
+  @@index([status, createdAt(sort: Desc)]) // ~ Mongo { status: 1, timestamp: -1 }
+  @@index([customerId])
+  @@map("orders")
+}
