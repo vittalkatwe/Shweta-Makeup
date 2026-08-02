@@ -5,6 +5,7 @@
     "dev": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
     "dev:admin": "npm --prefix admin run dev -- -p 3001",
+    "dev:db": "docker compose up -d db",
     "build": "npm --prefix frontend run build"
   }
 }

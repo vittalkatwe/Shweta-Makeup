@@ -1,0 +1,22 @@
+# Local development stack — Postgres only.
+# Apps run natively (npm run dev / dev:backend / dev:admin); this just provides the DB.
+# Usage: npm run dev:db   (or: docker compose up -d db)
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shweta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shweta}
+      POSTGRES_DB: ${POSTGRES_DB:-shweta_dev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shweta} -d ${POSTGRES_DB:-shweta_dev}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
