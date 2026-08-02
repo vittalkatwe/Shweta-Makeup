@@ -1,0 +1,54 @@
+# Production stack (Lightsail).
+#   Deploy:   docker compose -f docker-compose.prod.yml up -d --build
+#   Migrate:  docker compose -f docker-compose.prod.yml run --rm migrate
+# The database is managed (Neon/Supabase) — no Postgres container here.
+# Admin deploys separately on Render (Docker runtime, admin/Dockerfile).
+#
+# Frontend build args come from the root .env file (see .env.example). They are
+# BAKED INTO THE BUNDLE at build time — changing one requires:
+#   docker compose -f docker-compose.prod.yml up -d --build web
+services:
+  web:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL}
+        REACT_APP_RAZORPAY_KEY_ID: ${REACT_APP_RAZORPAY_KEY_ID}
+        VITE_CLEVERTAP_ACCOUNT_ID: ${VITE_CLEVERTAP_ACCOUNT_ID}
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
+        VITE_FIREBASE_MEASUREMENT_ID: ${VITE_FIREBASE_MEASUREMENT_ID}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # TLS edge config replaces the image's plain-HTTP default.conf
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+    # No published ports — only reachable as backend:5001 on the compose network.
+    restart: unless-stopped
+
+  # One-shot migration runner (prisma CLI lives in the `deps` build stage).
+  # Run deliberately at deploy time — never wired into the app's startup:
+  #   docker compose -f docker-compose.prod.yml run --rm migrate
+  # Needs DIRECT_URL (non-pooled) in backend/.env.
+  migrate:
+    build:
+      context: ./backend
+      target: deps
+    command: npx prisma migrate deploy
+    env_file: ./backend/.env
+    profiles: [ops]
