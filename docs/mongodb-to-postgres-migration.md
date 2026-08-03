@@ -24,7 +24,8 @@ Verified locally: `prisma validate` passes, client generates, `node --check` pas
 
 ## Cutover steps (you run these — need the DB)
 
-1. **Provision managed Postgres** (Neon/Supabase) in the **same region as Lightsail**. Get two URLs: pooled (`DATABASE_URL`) and direct (`DIRECT_URL`).
+1. **Provision managed Postgres** (Supabase) in the **same region as EC2** (ap-south-1 / Mumbai). Get two URLs: pooled (`DATABASE_URL`) and direct (`DIRECT_URL`).
+   - **Supabase-on-EC2 gotcha:** use the **Supavisor pooler** hostnames for *both* URLs — `DATABASE_URL` = transaction pooler (port `6543`), `DIRECT_URL` = session pooler (port `5432`). They resolve over **IPv4**; the raw `db.<ref>.supabase.co:5432` endpoint is **IPv6-only** and `prisma migrate deploy` will hang/fail from a default EC2 VPC.
 2. **Set env** where `MONGODB_URI` is currently injected (host/pm2 env — it is *not* in `backend/.env`):
    ```
    DATABASE_URL="postgresql://.../db?sslmode=require&pgbouncer=true&connection_limit=5"

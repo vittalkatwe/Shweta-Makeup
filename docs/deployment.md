@@ -1,16 +1,15 @@
-# Deployment — Docker on Lightsail
+# Deployment — Docker on AWS EC2
 
 Production topology after the Docker cutover:
 
 ```
 Internet ──▶ web (nginx container, ports 80/443)
-              ├─ serves the built frontend bundle (baked into the image)
-              └─ proxies /api/* ──▶ backend (Express container, internal :5001)
-                                       └─▶ managed Postgres (Neon/Supabase)
-Admin dashboard: Render (Docker runtime, admin/Dockerfile) — separate from Lightsail.
+              ├─ shwetamakeover.online / www   → serves the built frontend bundle (baked into the image)
+              ├─ /api/*  ──▶ backend (Express container, internal :5001) ──▶ managed Postgres (Supabase)
+              └─ admin.shwetamakeover.online    ──▶ admin (Next.js standalone container, internal :3000)
 ```
 
-- `docker-compose.prod.yml` defines `web` + `backend` + a one-shot `migrate` service.
+- `docker-compose.prod.yml` defines `web` + `backend` + `admin` + a one-shot `migrate` service.
 - TLS certs stay on the host (`/etc/letsencrypt`, read-only mount); the host
   certbot renews them in webroot mode.
 - The backend container publishes no ports — it is only reachable through nginx.
@@ -32,8 +31,9 @@ docker compose -f docker-compose.prod.yml up -d --build
   build time** — after editing one: `docker compose -f docker-compose.prod.yml up -d --build web`.
 - Backend env (`backend/.env`) is runtime — after editing:
   `docker compose -f docker-compose.prod.yml up -d backend` (restart is enough, no rebuild).
-- Admin: push to `main`; Render builds `admin/Dockerfile` (root directory `admin`,
-  runtime Docker, build arg `NEXT_PUBLIC_API_URL=https://shwetamakeover.online`).
+- Admin is part of the same compose stack. Because `NEXT_PUBLIC_API_URL` (root
+  `.env`, `=https://shwetamakeover.online`) is baked into the bundle, an admin
+  change is a rebuild: `docker compose -f docker-compose.prod.yml up -d --build admin`.
 
 ## One-time cutover runbook (pm2 + host nginx → Docker)
 
@@ -55,7 +55,7 @@ listing anything missing):
 ```
 NODE_ENV=production
 LOG_LEVEL=info
-CORS_ORIGINS=https://shwetamakeover.online,https://www.shwetamakeover.online,https://<admin>.onrender.com
+CORS_ORIGINS=https://shwetamakeover.online,https://www.shwetamakeover.online,https://admin.shwetamakeover.online
 MIXPANEL_TOKEN=...            # ROTATE — old value was committed in git history
 META_PIXEL_ID=...
 META_CAPI_ACCESS_TOKEN=...    # ROTATE — old value was committed in git history
@@ -108,13 +108,18 @@ docker compose -f docker-compose.prod.yml up -d
 - a hashed `/assets/*.js` → `Cache-Control: public, immutable`
 - one real (test-mode or low-value) payment end-to-end
 - Razorpay dashboard → send test webhook → 200
-- Admin on Render loads data (its origin must be in `CORS_ORIGINS`)
+- Admin at `https://admin.shwetamakeover.online` loads data (its origin must be in `CORS_ORIGINS`)
 - `docker compose -f docker-compose.prod.yml logs backend` shows real client IPs
 
 ### 6. Switch certbot renewal to webroot mode
 
+The `admin` subdomain needs its own cert (the nginx admin vhost points at
+`/etc/letsencrypt/live/admin.shwetamakeover.online/`). Issue/renew all names in
+webroot mode:
+
 ```bash
 sudo certbot certonly --webroot -w /var/www/certbot -d shwetamakeover.online -d www.shwetamakeover.online --dry-run
+sudo certbot certonly --webroot -w /var/www/certbot -d admin.shwetamakeover.online --dry-run
 ```
 
 Once the dry run passes, make renewals reload nginx-in-container — add

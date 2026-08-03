@@ -41,6 +41,17 @@ services:
     # No published ports — only reachable as backend:5001 on the compose network.
     restart: unless-stopped
 
+  # Admin dashboard (Next.js standalone). NEXT_PUBLIC_API_URL is BAKED IN at build
+  # time (admin fetches `${API_URL}/api/admin/*`) — changing it needs a rebuild:
+  #   docker compose -f docker-compose.prod.yml up -d --build admin
+  admin:
+    build:
+      context: ./admin
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    # No published ports — nginx proxies admin.<domain> → admin:3000 on the compose network.
+    restart: unless-stopped
+
   # One-shot migration runner (prisma CLI lives in the `deps` build stage).
   # Run deliberately at deploy time — never wired into the app's startup:
   #   docker compose -f docker-compose.prod.yml run --rm migrate

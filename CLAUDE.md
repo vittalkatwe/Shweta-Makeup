@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Single monorepo — this is the only repo; there is no separate production copy to sync.
 
-- `frontend/` — customer site (React 18 + Vite). In production it is built inside `frontend/Dockerfile` and served by the nginx `web` container (the edge on Lightsail). `frontend/dist/` is still committed only as legacy-rollback insurance until the Docker cutover soaks (see `docs/deployment.md` step 10).
-- `admin/` — admin dashboard (Next.js + TypeScript, App Router, `output: 'standalone'`). Deploys to Render with Docker runtime (`admin/Dockerfile`, root directory `admin`).
-- `backend/` — Express API on port 5001, split into modules (see below). Runs as the `backend` container on Lightsail; publishes no host port — nginx proxies `/api/*` to it over the compose network.
+- `frontend/` — customer site (React 18 + Vite). In production it is built inside `frontend/Dockerfile` and served by the nginx `web` container (the edge on the AWS EC2 host). `frontend/dist/` is still committed only as legacy-rollback insurance until the Docker cutover soaks (see `docs/deployment.md` step 10).
+- `admin/` — admin dashboard (Next.js + TypeScript, App Router, `output: 'standalone'`). Runs as the `admin` container on the EC2 host behind nginx at `admin.shwetamakeover.online` (`admin/Dockerfile`); publishes no host port. `NEXT_PUBLIC_API_URL` is baked in at build time.
+- `backend/` — Express API on port 5001, split into modules (see below). Runs as the `backend` container on the EC2 host; publishes no host port — nginx proxies `/api/*` to it over the compose network.
 - `deploy/nginx/conf.d/` — production TLS nginx config, mounted over the `web` container's baked default.
 - `analytics/` — Python reporting scripts (run from repo root). Generated xlsx/csv outputs are gitignored.
 - `docs/deployment.md` — production topology, day-2 release commands, one-time pm2→Docker cutover runbook + rollback.
@@ -37,8 +37,8 @@ Frontend and backend must both run for the checkout flow to work locally. Apps r
 
 ## Releasing
 
-- **Frontend + backend (Lightsail)**: push, then on the server `git pull` → `run --rm migrate` (if schema changed) → `docker compose -f docker-compose.prod.yml up -d --build`.
-- **Admin**: push to `main`; Render builds `admin/Dockerfile` (build arg `NEXT_PUBLIC_API_URL`).
+- **Frontend + backend + admin (EC2)**: push, then on the server `git pull` → `run --rm migrate` (if schema changed) → `docker compose -f docker-compose.prod.yml up -d --build`. All three (`web`, `backend`, `admin`) are one compose stack.
+- **Admin rebuild caveat**: `NEXT_PUBLIC_API_URL` is baked into the admin bundle, so an admin release is `up -d --build admin` (rebuild, not a restart).
 - **Env caveat**: `REACT_APP_*` / `VITE_*` / `NEXT_PUBLIC_*` are baked at build time — changing one requires an image rebuild, not a restart. Backend env (`backend/.env`) is runtime — restart is enough.
 - Until the one-time cutover in `docs/deployment.md` has run on the server, the legacy flow (committed `frontend/dist` + pm2 + host nginx) still applies there.
 
